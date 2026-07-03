@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ empresa.nombre }} - INCAP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .contenedor {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .titulo-empresa {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .logo-placeholder {
+            width: 60px;
+            height: 60px;
+            background-color: #eaf2f8;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        .grid-acciones {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .tarjeta-accion {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 35px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #2c3e50;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .tarjeta-accion:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .icono {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .tarjeta-accion h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+
+        .tarjeta-accion p {
+            margin: 0;
+            font-size: 13px;
+            color: #777;
+        }
+
+        .incidente .icono {
+            color: #c0392b;
+        }
+
+        .requerimiento .icono {
+            color: #2980b9;
+        }
+
+        .historial .icono {
+            color: #27ae60;
+        }
+
+        .volver {
+            display: inline-block;
+            margin-top: 30px;
+            color: #2980b9;
+            text-decoration: none;
+        }
+
+        .mensaje {
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .mensaje.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .mensaje.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Atención al Cliente INCAP</h1>
+    </header>
+    <div class="contenedor">
+        <div class="titulo-empresa">
+            <div class="logo-placeholder">{{ empresa.nombre|slice:":2"|upper }}</div>
+            <h2>{{ empresa.nombre }}</h2>
+            {% if messages %}
+            {% for message in messages %}
+            <div class="mensaje {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="grid-acciones">
+            <a href="{% url 'crear_ticket' empresa.id 'incidente' %}" class="tarjeta-accion incidente">
+                <div class="icono">⚠️</div>
+                <h3>Levantar incidente</h3>
+                <p>Reporta un problema o falla</p>
+            </a>
+            <a href="{% url 'crear_ticket' empresa.id 'requerimiento' %}" class="tarjeta-accion requerimiento">
+                <div class="icono">📝</div>
+                <h3>Levantar requerimiento</h3>
+                <p>Solicita algo nuevo</p>
+            </a>
+            <a href="{% url 'historial_tickets' empresa.id %}" class="tarjeta-accion historial">
+                <div class="icono">📋</div>
+                <h3>Mi historial</h3>
+                <p>Consulta tus tickets anteriores</p>
+            </a>
+        </div>
+
+        <a href="{% url 'inicio' %}" class="volver">← Volver a inicio</a>
+    </div>
+</body>
+
+</html>

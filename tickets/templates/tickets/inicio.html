@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Tickets</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .contenedor {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .tarjeta-principal {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .boton {
+            display: inline-block;
+            background-color: #2980b9;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            margin-top: 10px;
+            margin-right: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .boton-secundario {
+            background-color: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .boton-link {
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .grid-empresas {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .tarjeta-empresa {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px 20px;
+            text-align: center;
+            text-decoration: none;
+            color: #2c3e50;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+
+        .tarjeta-empresa:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background-color: #eaf2f8;
+            border-radius: 50%;
+            margin: 0 auto 15px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #2980b9;
+        }
+
+        .tarjeta-empresa h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .sin-empresas {
+            color: #777;
+            font-style: italic;
+        }
+
+        .boton-notificacion {
+            position: relative;
+            margin-right: 15px;
+        }
+
+        .badge {
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .badge-cliente {
+            background-color: #27ae60;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .grid-estadisticas {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .tarjeta-stat {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            text-decoration: none;
+            text-align: center;
+            border-top: 4px solid #ccc;
+            transition: transform 0.15s;
+        }
+
+        .tarjeta-stat:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-numero {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .stat-total {
+            border-top-color: #2980b9;
+        }
+
+        .stat-nuevos {
+            border-top-color: #e67e22;
+        }
+
+        .stat-proceso {
+            border-top-color: #2980b9;
+        }
+
+        .stat-respuesta {
+            border-top-color: #27ae60;
+        }
+
+        .mensaje {
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .mensaje.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .mensaje.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Atención al Cliente INCAP</h1>
+        {% if user.is_authenticated %}
+        <span>
+            {% if puede_atender_tickets %}
+            <a href="{% url 'bandeja_tickets' %}" class="boton-secundario boton-notificacion">
+                Atender tickets
+                {% if tickets_pendientes_count > 0 %}
+                <span class="badge">{{ tickets_pendientes_count }}</span>
+                {% endif %}
+                {% if tickets_respuesta_cliente_count > 0 %}
+                <span class="badge badge-cliente">
+                    {{ tickets_respuesta_cliente_count }}
+                    comentarios nuevos
+                </span>
+                {% endif %}
+            </a>
+            {% endif %}
+            Hola, {{ user.username }}
+            ({% if user.is_superuser %}Superadministrador{% else %}{{ user.get_rol_display }}{% endif %}) —
+            <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="boton-secundario boton-link">Cerrar sesión</button>
+            </form>
+        </span>
+        {% else %}
+        <a href="{% url 'login' %}" class="boton-secundario">Iniciar sesión</a>
+        {% endif %}
+    </header>
+
+    <div class="contenedor">
+        <div class="tarjeta-principal">
+            <h2>Bienvenido</h2>
+
+            {% if messages %}
+            {% for message in messages %}
+            <div class="mensaje {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+            {% endif %}
+
+            <p>Aquí vas a poder crear y gestionar tus tickets de soporte.</p>
+
+            {% if not user.is_authenticated %}
+            <p>Debes iniciar sesión para continuar.</p>
+            {% endif %}
+
+            {% if puede_crear_usuarios %}
+            <a href="{% url 'crear_usuario' %}" class="boton">Crear usuario</a>
+            <a href="{% url 'lista_usuarios' %}" class="boton">Ver usuarios</a>
+            {% endif %}
+            {% if user.is_superuser %}
+            <a href="{% url 'lista_empresas' %}" class="boton">Empresas</a>
+            {% endif %}
+        </div>
+
+        {% if estadisticas %}
+        <div class="grid-estadisticas">
+            <a href="{% url 'bandeja_tickets' %}?filtro=todos" class="tarjeta-stat stat-total">
+                <div class="stat-numero">{{ estadisticas.total }}</div>
+                <div class="stat-label">Tickets totales</div>
+            </a>
+            <a href="{% url 'bandeja_tickets' %}?filtro=nuevos" class="tarjeta-stat stat-nuevos">
+                <div class="stat-numero">{{ estadisticas.nuevos }}</div>
+                <div class="stat-label">Nuevos (sin atender)</div>
+            </a>
+            <a href="{% url 'bandeja_tickets' %}?filtro=en_proceso" class="tarjeta-stat stat-proceso">
+                <div class="stat-numero">{{ estadisticas.en_proceso }}</div>
+                <div class="stat-label">En proceso</div>
+            </a>
+            <a href="{% url 'bandeja_tickets' %}?filtro=respuesta_cliente" class="tarjeta-stat stat-respuesta">
+                <div class="stat-numero">{{ estadisticas.respuesta_cliente }}</div>
+                <div class="stat-label">Comentarios nuevos del cliente</div>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+        <h2>Selecciona una empresa</h2>
+        <div class="grid-empresas">
+            {% for empresa in empresas_usuario %}
+            <a href="{% url 'portal_empresa' empresa.id %}" class="tarjeta-empresa">
+                <div class="logo-placeholder">{{ empresa.nombre|slice:":2"|upper }}</div>
+                <h3>{{ empresa.nombre }}</h3>
+            </a>
+            {% empty %}
+            <p class="sin-empresas">No tienes acceso a ninguna empresa todavía. Contacta a tu administrador.</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+
+</html>

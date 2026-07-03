@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva empresa - INCAP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .contenedor {
+            max-width: 450px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .boton {
+            background-color: #2980b9;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+
+        .volver {
+            display: inline-block;
+            margin-top: 15px;
+            color: #2980b9;
+            text-decoration: none;
+        }
+
+        .mensaje {
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .mensaje.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .mensaje.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Atención al Cliente INCAP</h1>
+    </header>
+    <div class="contenedor">
+        <h2>Nueva empresa / sistema</h2>
+        {% if messages %}
+        {% for message in messages %}
+        <div class="mensaje {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% endfor %}
+            <button type="submit" class="boton">Crear empresa</button>
+        </form>
+        <a href="{% url 'lista_empresas' %}" class="volver">← Volver a empresas</a>
+    </div>
+</body>
+
+</html>

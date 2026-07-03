@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ticket #{{ ticket.id }} - INCAP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .contenedor {
+            max-width: 650px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .detalle p {
+            margin: 6px 0;
+        }
+
+        .descripcion {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+
+        label {
+            display: block;
+            margin-top: 20px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .boton {
+            background-color: #2980b9;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+
+        .volver {
+            display: inline-block;
+            margin-top: 15px;
+            color: #2980b9;
+            text-decoration: none;
+        }
+
+        .etiqueta {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .estado-abierto {
+            background-color: #fdebd0;
+            color: #b9770e;
+        }
+
+        .estado-en_proceso {
+            background-color: #eaf2f8;
+            color: #2980b9;
+        }
+
+        .estado-cerrado {
+            background-color: #e8f8f5;
+            color: #17a589;
+        }
+
+        .historial-item {
+            border-left: 3px solid #ccc;
+            padding: 10px 15px;
+            margin-top: 15px;
+            background: #f9f9f9;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .historial-item.es-agente {
+            border-left-color: #2980b9;
+        }
+
+        .historial-item.es-cliente {
+            border-left-color: #27ae60;
+            background: #f2faf5;
+        }
+
+        .historial-meta {
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 5px;
+        }
+
+        .autor-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .autor-agente {
+            background-color: #eaf2f8;
+            color: #2980b9;
+        }
+
+        .autor-cliente {
+            background-color: #e8f8f5;
+            color: #27ae60;
+        }
+
+        .aviso-cerrado {
+            background-color: #fdecea;
+            color: #922b21;
+            padding: 12px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #e0e0e0;
+            margin: 25px 0;
+        }
+
+        .mensaje {
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+
+        .mensaje.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .mensaje.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Atención al Cliente INCAP</h1>
+    </header>
+    <div class="contenedor">
+        <h2>Ticket #{{ ticket.id }} — {{ ticket.titulo }}</h2>
+        <span class="etiqueta estado-{{ ticket.estado }}">{{ ticket.get_estado_display }}</span>
+        {% if messages %}
+        {% for message in messages %}
+        <div class="mensaje {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="detalle">
+            <p><strong>Empresa:</strong> {{ ticket.empresa.nombre }}</p>
+            <p><strong>Tipo:</strong> {{ ticket.get_tipo_display }}</p>
+            <p><strong>Fecha de creación:</strong> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</p>
+            {% if ticket.estado == 'cerrado' %}
+            <p><strong>Cerrado por:</strong> {{ ticket.cerrado_por.username|default:"—" }}</p>
+            <p><strong>Fecha de cierre:</strong> {{ ticket.fecha_cierre|date:"d/m/Y H:i" }}</p>
+            {% endif %}
+            <p><strong>Descripción original:</strong></p>
+            <div class="descripcion">{{ ticket.descripcion }}</div>
+        </div>
+
+        <hr>
+
+        <h3>Seguimiento</h3>
+        {% for item in historial %}
+        <div class="historial-item {% if item.autor == ticket.cliente %}es-cliente{% else %}es-agente{% endif %}">
+            <div class="historial-meta">
+                {{ item.fecha_creacion|date:"d/m/Y H:i" }}
+                —
+                {{ item.autor.username|default:"Usuario eliminado" }}
+                {% if item.autor == ticket.cliente %}
+                <span class="autor-tag autor-cliente">Tú</span>
+                {% else %}
+                <span class="autor-tag autor-agente">Soporte</span>
+                {% endif %}
+                —
+                <span class="etiqueta estado-{{ item.estado_en_ese_momento }}">
+                    {{ item.get_estado_en_ese_momento_display }}
+                </span>
+            </div>
+            <div>{{ item.comentario }}</div>
+        </div>
+        {% empty %}
+        <p style="color:#888; font-style:italic;">Todavía no hay actualizaciones registradas.</p>
+        {% endfor %}
+
+        <hr>
+
+        {% if ticket.estado == 'cerrado' %}
+        <div class="aviso-cerrado">
+            🔒 Este ticket está cerrado. Si el problema persiste, por favor levanta un ticket nuevo.
+        </div>
+        {% else %}
+        <h3>Agregar comentario</h3>
+        <form method="post">
+            {% csrf_token %}
+            <label for="{{ form.comentario.id_for_label }}">{{ form.comentario.label }}</label>
+            {{ form.comentario }}
+            {% if form.comentario.errors %}
+            <p style="color:#c0392b; font-size:13px;">{{ form.comentario.errors.0 }}</p>
+            {% endif %}
+            <button type="submit" class="boton">Enviar comentario</button>
+        </form>
+        {% endif %}
+
+        <a href="{% url 'historial_tickets' ticket.empresa.id %}" class="volver">← Volver a mi historial</a>
+    </div>
+</body>
+
+</html>
