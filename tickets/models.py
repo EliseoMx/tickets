@@ -92,3 +92,21 @@ class TicketActualizacion(models.Model):
 
     def __str__(self):
         return f"Actualización de Ticket #{self.ticket_id} - {self.fecha_creacion}"
+
+
+class TicketImagen(models.Model):
+    ticket = models.ForeignKey(
+        Ticket, on_delete=models.CASCADE, null=True, blank=True, related_name='imagenes'
+    )
+    actualizacion = models.ForeignKey(
+        TicketActualizacion, on_delete=models.CASCADE, null=True, blank=True, related_name='imagenes'
+    )
+    imagen = models.ImageField(upload_to='tickets/')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Imagen de ticket'
+        verbose_name_plural = 'Imágenes de tickets'
+
+    def __str__(self):
+        return f"Imagen de ticket #{self.ticket_id or self.actualizacion.ticket_id}"

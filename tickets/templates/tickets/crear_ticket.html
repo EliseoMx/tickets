@@ -108,7 +108,7 @@
         {% endfor %}
         {% endif %}
 
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% for field in form %}
             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -116,6 +116,11 @@
             {% if field.help_text %}<p class="ayuda">{{ field.help_text }}</p>{% endif %}
             {% if field.errors %}<p style="color:#c0392b; font-size:13px;">{{ field.errors.0 }}</p>{% endif %}
             {% endfor %}
+
+            <label for="imagenes">Imágenes (opcional)</label>
+            <input type="file" id="imagenes" name="imagenes" multiple accept="image/*">
+            <p class="ayuda">Máximo 3 imágenes, 5MB cada una.</p>
+
             <button type="submit" class="boton">Crear {{ tipo_label|lower }}</button>
         </form>
 
