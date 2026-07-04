@@ -48,7 +48,7 @@ def inicio(request):
 def puede_crear_usuarios(user):
     if not user.is_authenticated:
         return False
-    return user.is_superuser or user.rol in [Usuario.Rol.AGENTE, Usuario.Rol.SOPORTE]
+    return user.is_superuser or user.rol == Usuario.Rol.AGENTE
 
 
 def puede_gestionar_empresas(user):
@@ -188,6 +188,16 @@ def usuario_tiene_acceso_empresa(user, empresa):
     return user.is_superuser or user.empresas.filter(id=empresa.id).exists()
 
 
+def puede_ver_tickets_de_empresa(user, empresa):
+    """A diferencia de usuario_tiene_acceso_empresa, esto exige un rol de gestión
+    (agente cliente o soporte) y no solo pertenecer a la empresa como cliente."""
+    if user.is_superuser:
+        return True
+    if user.rol not in [Usuario.Rol.AGENTE, Usuario.Rol.SOPORTE]:
+        return False
+    return user.empresas.filter(id=empresa.id).exists()
+
+
 @login_required
 def crear_ticket(request, empresa_id, tipo):
     empresa = get_object_or_404(Empresa, id=empresa_id, activa=True)
@@ -235,9 +245,10 @@ def crear_ticket(request, empresa_id, tipo):
 def historial_tickets(request, empresa_id=None):
     if request.user.is_superuser:
         tickets = Ticket.objects.select_related('empresa', 'cliente').all()
-    elif request.user.rol == Usuario.Rol.AGENTE:
-        empresas_agente = request.user.empresas.all()
-        tickets = Ticket.objects.select_related('empresa', 'cliente').filter(empresa__in=empresas_agente)
+    elif request.user.rol in [Usuario.Rol.AGENTE, Usuario.Rol.SOPORTE]:
+        # Agente cliente y agente de soporte ven todos los tickets de sus empresas asignadas
+        empresas_usuario = request.user.empresas.all()
+        tickets = Ticket.objects.select_related('empresa', 'cliente').filter(empresa__in=empresas_usuario)
     else:
         # Cliente: solo sus propios tickets, de cualquier empresa a la que tenga acceso
         tickets = Ticket.objects.select_related('empresa', 'cliente').filter(cliente=request.user)
@@ -258,8 +269,8 @@ def historial_tickets(request, empresa_id=None):
 def ticket_creado(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
-    # Solo el dueño del ticket, agentes o superusuario pueden ver esta confirmación
-    if ticket.cliente != request.user and not usuario_tiene_acceso_empresa(request.user, ticket.empresa):
+    # Solo el dueño del ticket, agente cliente/soporte de esa empresa, o superusuario
+    if ticket.cliente != request.user and not puede_ver_tickets_de_empresa(request.user, ticket.empresa):
         messages.error(request, 'No tienes acceso a este ticket.')
         return redirect('inicio')
 
@@ -493,13 +504,15 @@ def eliminar_empresa(request, empresa_id):
 @login_required
 def ver_ticket_cliente(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
+    es_dueno = ticket.cliente == request.user
 
-    # Solo el dueño del ticket puede verlo desde aquí (agentes usan atender_ticket)
-    if ticket.cliente != request.user:
+    # El dueño del ticket, agente cliente/soporte de esa empresa, o superusuario pueden ver esta página.
+    # Solo el dueño puede comentar, confirmar o rechazar el cierre.
+    if not es_dueno and not puede_ver_tickets_de_empresa(request.user, ticket.empresa):
         messages.error(request, 'No tienes acceso a este ticket.')
         return redirect('inicio')
 
-    if request.method == 'POST' and ticket.estado != Ticket.Estado.CERRADO:
+    if request.method == 'POST' and es_dueno and ticket.estado != Ticket.Estado.CERRADO:
         form = ComentarioClienteForm(request.POST)
         imagenes = request.FILES.getlist('imagenes')
         errores_imagenes = validar_imagenes(imagenes)
@@ -530,4 +543,5 @@ def ver_ticket_cliente(request, ticket_id):
         'ticket': ticket,
         'form': form,
         'historial': historial,
+        'es_dueno': es_dueno,
     })

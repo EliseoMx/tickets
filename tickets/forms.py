@@ -24,7 +24,7 @@ class CrearUsuarioForm(UserCreationForm):
         if creador and creador.is_superuser:
             self.fields['rol'].choices = Usuario.Rol.choices
             empresas_disponibles = Empresa.objects.filter(activa=True)
-        elif creador and creador.rol in [Usuario.Rol.AGENTE, Usuario.Rol.SOPORTE]:
+        elif creador and creador.rol == Usuario.Rol.AGENTE:
             self.fields['rol'].choices = [(Usuario.Rol.CLIENTE, 'Cliente')]
             self.fields['rol'].initial = Usuario.Rol.CLIENTE
             empresas_disponibles = creador.empresas.filter(activa=True)

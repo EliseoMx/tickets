@@ -163,7 +163,9 @@
                         {% elif usuario.rol == 'admin' %}
                         <span class="etiqueta-rol rol-admin">Administrador</span>
                         {% elif usuario.rol == 'agente' %}
-                        <span class="etiqueta-rol rol-agente">Agente</span>
+                        <span class="etiqueta-rol rol-agente">Agente Cliente</span>
+                        {% elif usuario.rol == 'soporte' %}
+                        <span class="etiqueta-rol rol-agente">Agente de Soporte</span>
                         {% else %}
                         <span class="etiqueta-rol rol-cliente">Cliente</span>
                         {% endif %}
