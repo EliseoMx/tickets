@@ -124,7 +124,7 @@
                     <th>Empresa</th>
                     <th>Tipo</th>
                     <th>Título</th>
-                    {% if request.user.is_superuser or request.user.rol == 'agente' %}
+                    {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}
                     <th>Cliente</th>
                     {% endif %}
                     <th>Estado</th>
@@ -139,13 +139,15 @@
                     <td><span class="etiqueta-empresa">{{ ticket.empresa.nombre }}</span></td>
                     <td><span class="etiqueta tipo-{{ ticket.tipo }}">{{ ticket.get_tipo_display }}</span></td>
                     <td>{{ ticket.titulo }}</td>
-                    {% if request.user.is_superuser or request.user.rol == 'agente' %}
+                    {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}
                     <td>{{ ticket.cliente.username }}</td>
                     {% endif %}
                     <td><span class="etiqueta estado-{{ ticket.estado }}">{{ ticket.get_estado_display }}</span></td>
                     <td>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</td>
                     <td>
-                        {% if ticket.cliente == request.user %}
+                        {% if request.user.is_superuser or request.user.rol == 'soporte' %}
+                        <a href="{% url 'atender_ticket' ticket.id %}" class="boton-pequeno">Ver</a>
+                        {% else %}
                         <a href="{% url 'ver_ticket_cliente' ticket.id %}" class="boton-pequeno">Ver</a>
                         {% endif %}
                     </td>

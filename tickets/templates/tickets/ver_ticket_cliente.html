@@ -317,6 +317,10 @@
         <div class="aviso-cerrado">
             🔒 Este ticket está cerrado. Si el problema persiste, por favor levanta un ticket nuevo.
         </div>
+        {% elif not es_dueno %}
+        <div class="aviso-cerrado">
+            👁 Estás viendo este ticket en modo solo lectura (perteneces a la empresa, pero no eres el dueño).
+        </div>
         {% else %}
         {% if ticket.estado == 'pendiente_confirmacion' %}
         <div class="aviso-confirmacion">
