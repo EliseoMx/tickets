@@ -23,4 +23,6 @@ urlpatterns = [
     path('empresas/<int:empresa_id>/alternar-activa/', views.alternar_empresa_activa, name='alternar_empresa_activa'),
     path('empresas/<int:empresa_id>/eliminar/', views.eliminar_empresa, name='eliminar_empresa'),
     path('tickets/<int:ticket_id>/ver/', views.ver_ticket_cliente, name='ver_ticket_cliente'),
+    path('tickets/<int:ticket_id>/confirmar-cierre/', views.confirmar_cierre_ticket, name='confirmar_cierre_ticket'),
+    path('tickets/<int:ticket_id>/rechazar-cierre/', views.rechazar_cierre_ticket, name='rechazar_cierre_ticket'),
 ]
