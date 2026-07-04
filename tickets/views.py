@@ -87,6 +87,7 @@ def lista_usuarios(request):
 
     if request.user.is_superuser:
         usuarios = Usuario.objects.all().prefetch_related('empresas').order_by('rol', 'username')
+        empresas_disponibles = Empresa.objects.filter(activa=True).order_by('nombre')
     else:
         empresas_propias = request.user.empresas.all()
         usuarios = Usuario.objects.filter(
@@ -94,8 +95,23 @@ def lista_usuarios(request):
             empresas__in=empresas_propias,
             is_superuser=False
         ).distinct().prefetch_related('empresas').order_by('username')
+        empresas_disponibles = empresas_propias.filter(activa=True).order_by('nombre')
 
-    return render(request, 'tickets/lista_usuarios.html', {'usuarios': usuarios})
+    rol_filtro = request.GET.get('rol', '')
+    if request.user.is_superuser and rol_filtro in Usuario.Rol.values:
+        usuarios = usuarios.filter(rol=rol_filtro)
+
+    empresa_filtro_id = request.GET.get('empresa', '')
+    if empresa_filtro_id:
+        usuarios = usuarios.filter(empresas__id=empresa_filtro_id).distinct()
+
+    return render(request, 'tickets/lista_usuarios.html', {
+        'usuarios': usuarios,
+        'empresas_disponibles': empresas_disponibles,
+        'roles_disponibles': Usuario.Rol.choices,
+        'rol_filtro': rol_filtro,
+        'empresa_filtro_id': empresa_filtro_id,
+    })
 
 
 @login_required
@@ -259,10 +275,47 @@ def historial_tickets(request, empresa_id=None):
         if not usuario_tiene_acceso_empresa(request.user, empresa_actual):
             messages.error(request, 'No tienes acceso a esta empresa.')
             return redirect('inicio')
+        tickets = tickets.filter(empresa=empresa_actual)
+
+    empresas_disponibles = None
+    if not empresa_actual:
+        empresas_disponibles = Empresa.objects.filter(
+            id__in=tickets.values_list('empresa_id', flat=True)
+        ).distinct().order_by('nombre')
+
+    clientes_disponibles = None
+    if request.user.is_superuser or request.user.rol in [Usuario.Rol.AGENTE, Usuario.Rol.SOPORTE]:
+        clientes_disponibles = Usuario.objects.filter(
+            id__in=tickets.values_list('cliente_id', flat=True)
+        ).distinct().order_by('username')
+
+    estado_filtro = request.GET.get('estado', '')
+    if estado_filtro in Ticket.Estado.values:
+        tickets = tickets.filter(estado=estado_filtro)
+
+    tipo_filtro = request.GET.get('tipo', '')
+    if tipo_filtro in Ticket.Tipo.values:
+        tickets = tickets.filter(tipo=tipo_filtro)
+
+    empresa_filtro_id = request.GET.get('empresa', '')
+    if empresas_disponibles is not None and empresa_filtro_id:
+        tickets = tickets.filter(empresa_id=empresa_filtro_id)
+
+    cliente_filtro_id = request.GET.get('cliente', '')
+    if clientes_disponibles is not None and cliente_filtro_id:
+        tickets = tickets.filter(cliente_id=cliente_filtro_id)
 
     return render(request, 'tickets/historial_tickets.html', {
         'tickets': tickets,
         'empresa_actual': empresa_actual,
+        'empresas_disponibles': empresas_disponibles,
+        'clientes_disponibles': clientes_disponibles,
+        'estados_disponibles': Ticket.Estado.choices,
+        'tipos_disponibles': Ticket.Tipo.choices,
+        'estado_filtro': estado_filtro,
+        'tipo_filtro': tipo_filtro,
+        'empresa_filtro_id': empresa_filtro_id,
+        'cliente_filtro_id': cliente_filtro_id,
     })
 
 @login_required
