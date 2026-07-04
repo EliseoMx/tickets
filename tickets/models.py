@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
 
 class Empresa(models.Model):
@@ -42,7 +43,12 @@ class Ticket(models.Model):
     class Estado(models.TextChoices):
         ABIERTO = 'abierto', 'Abierto'
         EN_PROCESO = 'en_proceso', 'En proceso'
+        PENDIENTE_CONFIRMACION = 'pendiente_confirmacion', 'Pendiente de confirmación'
         CERRADO = 'cerrado', 'Cerrado'
+
+    class MotivoCierre(models.TextChoices):
+        CLIENTE = 'cliente', 'Confirmado por el cliente'
+        AUTOMATICO = 'automatico', 'Cierre automático (sin respuesta)'
 
     class MedioContacto(models.TextChoices):
         TELEFONO = 'telefono', 'Teléfono'
@@ -61,7 +67,7 @@ class Ticket(models.Model):
         blank=True,
         help_text='Opcional: otro dato de contacto por si no logramos localizarte con el principal'
     )
-    estado = models.CharField(max_length=15, choices=Estado.choices, default=Estado.ABIERTO)
+    estado = models.CharField(max_length=25, choices=Estado.choices, default=Estado.ABIERTO)
     cerrado_por = models.ForeignKey(
         Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets_cerrados'
     )
@@ -72,6 +78,14 @@ class Ticket(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     fecha_cierre = models.DateTimeField(null=True, blank=True)
+    fecha_limite_confirmacion = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Si no hay confirmación del cliente antes de esta fecha, el ticket se cierra automáticamente'
+    )
+    motivo_cierre = models.CharField(max_length=12, choices=MotivoCierre.choices, null=True, blank=True)
+    pdf_cierre = models.FileField(
+        upload_to='cierres/', null=True, blank=True, storage=RawMediaCloudinaryStorage()
+    )
     requiere_atencion = models.BooleanField(default=False)
 
     class Meta:
@@ -83,7 +97,7 @@ class Ticket(models.Model):
 class TicketActualizacion(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='actualizaciones')
     autor = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='actualizaciones_realizadas')
-    estado_en_ese_momento = models.CharField(max_length=15, choices=Ticket.Estado.choices)
+    estado_en_ese_momento = models.CharField(max_length=25, choices=Ticket.Estado.choices)
     comentario = models.TextField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 

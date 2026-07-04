@@ -9,6 +9,11 @@ from .models import Usuario, Empresa, Ticket
 from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm
 from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen
 from .validators import validar_imagenes
+from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos
+from django.utils import timezone
+from datetime import timedelta
+
+DIAS_LIMITE_CONFIRMACION = 3
 
 
 def inicio(request):
@@ -266,6 +271,8 @@ def bandeja_tickets(request):
         messages.error(request, 'No tienes permiso para atender tickets.')
         return redirect('inicio')
 
+    cerrar_tickets_vencidos()
+
     filtro = request.GET.get('filtro', 'pendientes')
 
     if request.user.is_superuser:
@@ -286,7 +293,7 @@ def bandeja_tickets(request):
         tickets = base.all()
     else:
         tickets = base.filter(
-            estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROCESO]
+            estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROCESO, Ticket.Estado.PENDIENTE_CONFIRMACION]
         ).order_by('-requiere_atencion', '-fecha_creacion')
 
     return render(request, 'tickets/bandeja_tickets.html', {'tickets': tickets, 'filtro': filtro})
@@ -304,9 +311,9 @@ def atender_ticket(request, ticket_id):
         messages.error(request, 'No tienes acceso a este ticket.')
         return redirect('bandeja_tickets')
 
-    esta_cerrado = ticket.estado == Ticket.Estado.CERRADO
+    esta_bloqueado = ticket.estado in [Ticket.Estado.CERRADO, Ticket.Estado.PENDIENTE_CONFIRMACION]
 
-    if request.method == 'POST' and not esta_cerrado:
+    if request.method == 'POST' and not esta_bloqueado:
         form = ActualizacionTicketForm(request.POST)
         imagenes = request.FILES.getlist('imagenes')
         errores_imagenes = validar_imagenes(imagenes)
@@ -320,19 +327,22 @@ def atender_ticket(request, ticket_id):
             for imagen in imagenes:
                 TicketImagen.objects.create(actualizacion=actualizacion, imagen=imagen)
 
-            ticket.estado = actualizacion.estado_en_ese_momento
             ticket.requiere_atencion = False
 
             if actualizacion.estado_en_ese_momento == Ticket.Estado.CERRADO:
-                ticket.cerrado_por = request.user
-                ticket.fecha_cierre = actualizacion.fecha_creacion
+                ticket.estado = Ticket.Estado.PENDIENTE_CONFIRMACION
+                ticket.fecha_limite_confirmacion = timezone.now() + timedelta(days=DIAS_LIMITE_CONFIRMACION)
+                messages.success(
+                    request,
+                    f'Ticket #{ticket.id} marcado como resuelto. Se espera confirmación del cliente '
+                    f'(se cerrará automáticamente en {DIAS_LIMITE_CONFIRMACION} días si no responde).'
+                )
             else:
-                ticket.cerrado_por = None
-                ticket.fecha_cierre = None
+                ticket.estado = actualizacion.estado_en_ese_momento
+                ticket.fecha_limite_confirmacion = None
+                messages.success(request, f'Actualización registrada en el ticket #{ticket.id}.')
 
             ticket.save()
-
-            messages.success(request, f'Actualización registrada en el ticket #{ticket.id}.')
             return redirect('bandeja_tickets')
         else:
             for error in errores_imagenes:
@@ -345,7 +355,8 @@ def atender_ticket(request, ticket_id):
         'ticket': ticket,
         'form': form,
         'historial': historial,
-        'esta_cerrado': esta_cerrado,
+        'esta_cerrado': ticket.estado == Ticket.Estado.CERRADO,
+        'esta_bloqueado': esta_bloqueado,
     })
 
 @login_required
@@ -364,6 +375,8 @@ def reabrir_ticket(request, ticket_id):
         ticket.estado = Ticket.Estado.EN_PROCESO
         ticket.cerrado_por = None
         ticket.fecha_cierre = None
+        ticket.fecha_limite_confirmacion = None
+        ticket.motivo_cierre = None
         ticket.save()
 
         TicketActualizacion.objects.create(
@@ -377,6 +390,61 @@ def reabrir_ticket(request, ticket_id):
         return redirect('atender_ticket', ticket_id=ticket.id)
 
     return redirect('atender_ticket', ticket_id=ticket.id)
+
+
+@login_required
+def confirmar_cierre_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if ticket.cliente != request.user:
+        messages.error(request, 'No tienes acceso a este ticket.')
+        return redirect('inicio')
+
+    if ticket.estado != Ticket.Estado.PENDIENTE_CONFIRMACION:
+        messages.error(request, 'Este ticket no está esperando confirmación.')
+        return redirect('ver_ticket_cliente', ticket_id=ticket.id)
+
+    if request.method == 'POST':
+        _, correo_enviado = cerrar_ticket_definitivo(
+            ticket, motivo=Ticket.MotivoCierre.CLIENTE, cerrado_por=request.user
+        )
+        if correo_enviado:
+            messages.success(request, f'Ticket #{ticket.id} cerrado. Correo enviado.')
+        else:
+            messages.success(request, f'Ticket #{ticket.id} cerrado. No se pudo enviar el correo de aviso.')
+        return redirect('inicio')
+
+    return redirect('ver_ticket_cliente', ticket_id=ticket.id)
+
+
+@login_required
+def rechazar_cierre_ticket(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if ticket.cliente != request.user:
+        messages.error(request, 'No tienes acceso a este ticket.')
+        return redirect('inicio')
+
+    if ticket.estado != Ticket.Estado.PENDIENTE_CONFIRMACION:
+        messages.error(request, 'Este ticket no está esperando confirmación.')
+        return redirect('ver_ticket_cliente', ticket_id=ticket.id)
+
+    if request.method == 'POST':
+        ticket.estado = Ticket.Estado.EN_PROCESO
+        ticket.fecha_limite_confirmacion = None
+        ticket.requiere_atencion = True
+        ticket.save()
+
+        TicketActualizacion.objects.create(
+            ticket=ticket,
+            autor=request.user,
+            estado_en_ese_momento=Ticket.Estado.EN_PROCESO,
+            comentario='El cliente indicó que el ticket aún no está resuelto.'
+        )
+
+        messages.success(request, 'Le avisamos a soporte que el ticket aún no está resuelto.')
+
+    return redirect('ver_ticket_cliente', ticket_id=ticket.id)
 
 @login_required
 def alternar_empresa_activa(request, empresa_id):

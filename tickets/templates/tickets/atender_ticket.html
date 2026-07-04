@@ -98,6 +98,11 @@
             color: #17a589;
         }
 
+        .estado-pendiente_confirmacion {
+            background-color: #fef9e7;
+            color: #b7950b;
+        }
+
         .historial-item {
             border-left: 3px solid #2980b9;
             padding: 10px 15px;
@@ -264,10 +269,16 @@
 
         <hr>
 
-        {% if esta_cerrado %}
+        {% if esta_bloqueado %}
         <div class="aviso-cerrado">
+            {% if esta_cerrado %}
             🔒 Este ticket está cerrado y no admite más actualizaciones.
             Si el problema persiste o se cerró por error, puedes reabrirlo.
+            {% else %}
+            ⏳ Este ticket está marcado como resuelto, esperando confirmación del cliente
+            {% if ticket.fecha_limite_confirmacion %}(se cerrará solo el {{ ticket.fecha_limite_confirmacion|date:"d/m/Y H:i" }} si no responde){% endif %}.
+            Si detectas que aún no está resuelto, puedes reabrirlo.
+            {% endif %}
         </div>
 
         <form method="post" action="{% url 'reabrir_ticket' ticket.id %}"

@@ -16,6 +16,7 @@
         .estado-abierto { background-color: #fdebd0; color: #b9770e; }
         .estado-en_proceso { background-color: #eaf2f8; color: #2980b9; }
         .estado-cerrado { background-color: #e8f8f5; color: #17a589; }
+        .estado-pendiente_confirmacion { background-color: #fef9e7; color: #b7950b; }
         .boton-pequeno { background-color: #2980b9; color: white; padding: 6px 14px; border-radius: 4px; text-decoration: none; font-size: 13px; }
         .volver { display: inline-block; margin-top: 20px; color: #2980b9; text-decoration: none; }
         .vacio { color: #777; font-style: italic; margin-top: 20px; }
@@ -75,7 +76,7 @@
                         <td>{{ ticket.fecha_cierre|date:"d/m/Y H:i"|default:"—" }}</td>
                     {% endif %}
                     <td>
-                        {% if ticket.estado == 'cerrado' %}
+                        {% if ticket.estado == 'cerrado' or ticket.estado == 'pendiente_confirmacion' %}
                             <a href="{% url 'atender_ticket' ticket.id %}" class="boton-secundario-pequeno">Ver historial</a>
                         {% else %}
                             <a href="{% url 'atender_ticket' ticket.id %}" class="boton-pequeno">Atender</a>

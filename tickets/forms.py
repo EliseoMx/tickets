@@ -106,6 +106,14 @@ class ActualizacionTicketForm(forms.ModelForm):
             'comentario': 'Actualización / avance',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # El estado "pendiente de confirmación" lo asigna el sistema automáticamente
+        # al elegir "Cerrado"; no debe ser una opción manual.
+        self.fields['estado_en_ese_momento'].choices = [
+            c for c in Ticket.Estado.choices if c[0] != Ticket.Estado.PENDIENTE_CONFIRMACION
+        ]
+
 class ComentarioClienteForm(forms.ModelForm):
     class Meta:
         model = TicketActualizacion
