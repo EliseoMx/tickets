@@ -1,0 +1,15 @@
+asgiref==3.11.1
+certifi==2026.6.17
+charset-normalizer==3.4.7
+cloudinary==1.45.0
+Django==5.2.15
+django-cloudinary-storage==0.3.0
+idna==3.18
+pillow==12.3.0
+python-dotenv==1.2.2
+requests==2.34.2
+six==1.17.0
+sqlparse==0.5.5
+typing_extensions==4.16.0
+tzdata==2026.2
+urllib3==2.7.0

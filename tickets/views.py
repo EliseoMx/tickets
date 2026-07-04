@@ -7,7 +7,8 @@ from .forms import CrearUsuarioForm, EmpresaForm
 from .models import Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
 from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm
-from .models import Usuario, Empresa, Ticket, TicketActualizacion
+from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen
+from .validators import validar_imagenes
 
 
 def inicio(request):
@@ -196,13 +197,23 @@ def crear_ticket(request, empresa_id, tipo):
 
     if request.method == 'POST':
         form = TicketForm(request.POST, usuario=request.user)
-        if form.is_valid():
+        imagenes = request.FILES.getlist('imagenes')
+        errores_imagenes = validar_imagenes(imagenes)
+
+        if form.is_valid() and not errores_imagenes:
             ticket = form.save(commit=False)
             ticket.empresa = empresa
             ticket.cliente = request.user
             ticket.tipo = tipo
             ticket.save()
+
+            for imagen in imagenes:
+                TicketImagen.objects.create(ticket=ticket, imagen=imagen)
+
             return redirect('ticket_creado', ticket_id=ticket.id)
+        else:
+            for error in errores_imagenes:
+                messages.error(request, error)
     else:
         form = TicketForm(usuario=request.user)
 
@@ -297,11 +308,17 @@ def atender_ticket(request, ticket_id):
 
     if request.method == 'POST' and not esta_cerrado:
         form = ActualizacionTicketForm(request.POST)
-        if form.is_valid():
+        imagenes = request.FILES.getlist('imagenes')
+        errores_imagenes = validar_imagenes(imagenes)
+
+        if form.is_valid() and not errores_imagenes:
             actualizacion = form.save(commit=False)
             actualizacion.ticket = ticket
             actualizacion.autor = request.user
             actualizacion.save()
+
+            for imagen in imagenes:
+                TicketImagen.objects.create(actualizacion=actualizacion, imagen=imagen)
 
             ticket.estado = actualizacion.estado_en_ese_momento
             ticket.requiere_atencion = False
@@ -317,6 +334,9 @@ def atender_ticket(request, ticket_id):
 
             messages.success(request, f'Actualización registrada en el ticket #{ticket.id}.')
             return redirect('bandeja_tickets')
+        else:
+            for error in errores_imagenes:
+                messages.error(request, error)
     else:
         form = ActualizacionTicketForm(initial={'estado_en_ese_momento': ticket.estado})
 
@@ -413,18 +433,27 @@ def ver_ticket_cliente(request, ticket_id):
 
     if request.method == 'POST' and ticket.estado != Ticket.Estado.CERRADO:
         form = ComentarioClienteForm(request.POST)
-        if form.is_valid():
+        imagenes = request.FILES.getlist('imagenes')
+        errores_imagenes = validar_imagenes(imagenes)
+
+        if form.is_valid() and not errores_imagenes:
             comentario = form.save(commit=False)
             comentario.ticket = ticket
             comentario.autor = request.user
             comentario.estado_en_ese_momento = ticket.estado
             comentario.save()
 
+            for imagen in imagenes:
+                TicketImagen.objects.create(actualizacion=comentario, imagen=imagen)
+
             ticket.requiere_atencion = True
             ticket.save()
 
             messages.success(request, 'Tu comentario fue agregado.')
             return redirect('ver_ticket_cliente', ticket_id=ticket.id)
+        else:
+            for error in errores_imagenes:
+                messages.error(request, error)
     else:
         form = ComentarioClienteForm()
 

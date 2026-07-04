@@ -170,6 +170,19 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+
+        .imagenes-adjuntas {
+            margin-top: 10px;
+        }
+
+        .imagenes-adjuntas img {
+            max-width: 120px;
+            max-height: 120px;
+            object-fit: cover;
+            margin: 5px 5px 0 0;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 
@@ -196,6 +209,13 @@
             {% endif %}
             <p><strong>Descripción original:</strong></p>
             <div class="descripcion">{{ ticket.descripcion }}</div>
+            {% if ticket.imagenes.all %}
+            <div class="imagenes-adjuntas">
+                {% for img in ticket.imagenes.all %}
+                <a href="{{ img.imagen.url }}" target="_blank"><img src="{{ img.imagen.url }}" alt="Imagen adjunta"></a>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
         <hr>
@@ -218,6 +238,13 @@
                 </span>
             </div>
             <div>{{ item.comentario }}</div>
+            {% if item.imagenes.all %}
+            <div class="imagenes-adjuntas">
+                {% for img in item.imagenes.all %}
+                <a href="{{ img.imagen.url }}" target="_blank"><img src="{{ img.imagen.url }}" alt="Imagen adjunta"></a>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
         {% empty %}
         <p style="color:#888; font-style:italic;">Todavía no hay actualizaciones registradas.</p>
@@ -231,13 +258,18 @@
         </div>
         {% else %}
         <h3>Agregar comentario</h3>
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <label for="{{ form.comentario.id_for_label }}">{{ form.comentario.label }}</label>
             {{ form.comentario }}
             {% if form.comentario.errors %}
             <p style="color:#c0392b; font-size:13px;">{{ form.comentario.errors.0 }}</p>
             {% endif %}
+
+            <label for="imagenes">Imágenes (opcional)</label>
+            <input type="file" id="imagenes" name="imagenes" multiple accept="image/*">
+            <p class="ayuda">Máximo 3 imágenes, 5MB cada una.</p>
+
             <button type="submit" class="boton">Enviar comentario</button>
         </form>
         {% endif %}
