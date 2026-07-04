@@ -107,6 +107,36 @@
             text-decoration: none;
             font-size: 13px;
         }
+
+        .fila-filtros td {
+            background-color: #fafbfc;
+            padding: 6px 8px;
+        }
+
+        .fila-filtros select,
+        .fila-filtros input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .fila-busqueda td {
+            background-color: #fafbfc;
+            padding: 6px 8px 14px 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .fila-busqueda input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
     </style>
 </head>
 
@@ -117,6 +147,7 @@
     <div class="contenedor">
         <h2>Historial de tickets</h2>
 
+        <form method="get">
         <table>
             <thead>
                 <tr>
@@ -130,6 +161,61 @@
                     <th>Estado</th>
                     <th>Fecha</th>
                     <th>Acción</th>
+                </tr>
+                <tr class="fila-filtros">
+                    <td><select class="filtro-columna" data-col="0"><option value="">Todos</option></select></td>
+                    <td>
+                        {% if empresas_disponibles %}
+                        <select name="empresa" onchange="this.form.submit()">
+                            <option value="">Todas</option>
+                            {% for empresa in empresas_disponibles %}
+                            <option value="{{ empresa.id }}" {% if empresa_filtro_id == empresa.id|stringformat:"s" %}selected{% endif %}>{{ empresa.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select name="tipo" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            {% for valor, etiqueta in tipos_disponibles %}
+                            <option value="{{ valor }}" {% if valor == tipo_filtro %}selected{% endif %}>{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td><select class="filtro-columna" data-col="3"><option value="">Todos</option></select></td>
+                    {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}
+                    <td>
+                        {% if clientes_disponibles %}
+                        <select name="cliente" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            {% for cliente in clientes_disponibles %}
+                            <option value="{{ cliente.id }}" {% if cliente_filtro_id == cliente.id|stringformat:"s" %}selected{% endif %}>{{ cliente.username }}</option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                    <td>
+                        <select name="estado" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            {% for valor, etiqueta in estados_disponibles %}
+                            <option value="{{ valor }}" {% if valor == estado_filtro %}selected{% endif %}>{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}
+                        <select class="filtro-columna filtro-fecha" data-col="6"><option value="">Todos</option></select>
+                        {% else %}
+                        <select class="filtro-columna filtro-fecha" data-col="5"><option value="">Todos</option></select>
+                        {% endif %}
+                    </td>
+                    <td></td>
+                </tr>
+                <tr class="fila-busqueda">
+                    <td colspan="{% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}8{% else %}7{% endif %}">
+                        <input type="text" id="buscador" placeholder="Buscar por cualquier texto...">
+                    </td>
                 </tr>
             </thead>
             <tbody>
@@ -159,6 +245,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </form>
 
         {% if empresa_actual %}
         <a href="{% url 'portal_empresa' empresa_actual.id %}" class="volver">← Volver</a>
@@ -166,6 +253,69 @@
         <a href="{% url 'inicio' %}" class="volver">← Volver a inicio</a>
         {% endif %}
     </div>
+
+    <script>
+        const filtrosColumna = document.querySelectorAll('.filtro-columna');
+        const buscadorGeneral = document.getElementById('buscador');
+
+        function valorCelda(control, celda) {
+            const texto = celda.textContent.trim();
+            return control.classList.contains('filtro-fecha') ? texto.split(' ')[0] : texto;
+        }
+
+        function poblarSelectsColumna() {
+            filtrosColumna.forEach(function (control) {
+                if (control.tagName !== 'SELECT' || control.options.length > 1) return;
+                const col = parseInt(control.dataset.col, 10);
+                const valores = new Set();
+                document.querySelectorAll('tbody tr').forEach(function (fila) {
+                    const celdas = fila.querySelectorAll('td');
+                    if (celdas[col]) {
+                        const texto = valorCelda(control, celdas[col]);
+                        if (texto) valores.add(texto);
+                    }
+                });
+                Array.from(valores)
+                    .sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); })
+                    .forEach(function (valor) {
+                        const option = document.createElement('option');
+                        option.value = valor;
+                        option.textContent = valor;
+                        control.appendChild(option);
+                    });
+            });
+        }
+
+        function aplicarFiltros() {
+            const general = buscadorGeneral.value.toLowerCase();
+
+            document.querySelectorAll('tbody tr').forEach(function (fila) {
+                const celdas = fila.querySelectorAll('td');
+                let visible = true;
+
+                filtrosColumna.forEach(function (control) {
+                    const valor = control.value.toLowerCase();
+                    const col = parseInt(control.dataset.col, 10);
+                    if (valor && celdas[col] && valorCelda(control, celdas[col]).toLowerCase() !== valor) {
+                        visible = false;
+                    }
+                });
+
+                if (visible && general && !fila.textContent.toLowerCase().includes(general)) {
+                    visible = false;
+                }
+
+                fila.style.display = visible ? '' : 'none';
+            });
+        }
+
+        poblarSelectsColumna();
+        filtrosColumna.forEach(function (control) {
+            control.addEventListener('input', aplicarFiltros);
+            control.addEventListener('change', aplicarFiltros);
+        });
+        buscadorGeneral.addEventListener('input', aplicarFiltros);
+    </script>
 </body>
 
 </html>

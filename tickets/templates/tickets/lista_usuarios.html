@@ -126,6 +126,36 @@
             background-color: #e8f8f5;
             color: #17a589;
         }
+
+        .fila-filtros td {
+            background-color: #fafbfc;
+            padding: 6px 8px;
+        }
+
+        .fila-filtros select,
+        .fila-filtros input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .fila-busqueda td {
+            background-color: #fafbfc;
+            padding: 6px 8px 14px 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .fila-busqueda input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 13px;
+        }
     </style>
 </head>
 
@@ -140,6 +170,8 @@
         {% for message in messages %}<div class="mensaje {{ message.tags }}">{{ message }}</div>{% endfor %}
         {% endif %}
 
+        <form method="get" id="form-filtros"></form>
+
         <table>
             <thead>
                 <tr>
@@ -150,6 +182,44 @@
                     <th>Estado</th>
                     <th>Fecha de registro</th>
                     <th>Acciones</th>
+                </tr>
+                <tr class="fila-filtros">
+                    <td><select class="filtro-columna" data-col="0"><option value="">Todos</option></select></td>
+                    <td><select class="filtro-columna" data-col="1"><option value="">Todos</option></select></td>
+                    <td>
+                        {% if request.user.is_superuser %}
+                        <select name="rol" form="form-filtros" onchange="this.form.submit()">
+                            <option value="">Todos</option>
+                            {% for valor, etiqueta in roles_disponibles %}
+                            <option value="{{ valor }}" {% if valor == rol_filtro %}selected{% endif %}>{{ etiqueta }}</option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if empresas_disponibles %}
+                        <select name="empresa" form="form-filtros" onchange="this.form.submit()">
+                            <option value="">Todas</option>
+                            {% for empresa in empresas_disponibles %}
+                            <option value="{{ empresa.id }}" {% if empresa_filtro_id == empresa.id|stringformat:"s" %}selected{% endif %}>{{ empresa.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select class="filtro-columna" data-col="4">
+                            <option value="">Todos</option>
+                            <option value="activo">Activo</option>
+                            <option value="inactivo">Inactivo</option>
+                        </select>
+                    </td>
+                    <td><select class="filtro-columna" data-col="5"><option value="">Todos</option></select></td>
+                    <td></td>
+                </tr>
+                <tr class="fila-busqueda">
+                    <td colspan="7">
+                        <input type="text" id="buscador" placeholder="Buscar por cualquier texto...">
+                    </td>
                 </tr>
             </thead>
             <tbody>
@@ -210,6 +280,64 @@
 
         <a href="{% url 'inicio' %}" class="volver">← Volver a inicio</a>
     </div>
+
+    <script>
+        const filtrosColumna = document.querySelectorAll('.filtro-columna');
+        const buscadorGeneral = document.getElementById('buscador');
+
+        function poblarSelectsColumna() {
+            filtrosColumna.forEach(function (control) {
+                if (control.tagName !== 'SELECT' || control.options.length > 1) return;
+                const col = parseInt(control.dataset.col, 10);
+                const valores = new Set();
+                document.querySelectorAll('tbody tr').forEach(function (fila) {
+                    const celdas = fila.querySelectorAll('td');
+                    if (celdas[col]) {
+                        const texto = celdas[col].textContent.trim();
+                        if (texto) valores.add(texto);
+                    }
+                });
+                Array.from(valores)
+                    .sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); })
+                    .forEach(function (valor) {
+                        const option = document.createElement('option');
+                        option.value = valor;
+                        option.textContent = valor;
+                        control.appendChild(option);
+                    });
+            });
+        }
+
+        function aplicarFiltros() {
+            const general = buscadorGeneral.value.toLowerCase();
+
+            document.querySelectorAll('tbody tr').forEach(function (fila) {
+                const celdas = fila.querySelectorAll('td');
+                let visible = true;
+
+                filtrosColumna.forEach(function (control) {
+                    const valor = control.value.toLowerCase();
+                    const col = parseInt(control.dataset.col, 10);
+                    if (valor && celdas[col] && celdas[col].textContent.trim().toLowerCase() !== valor) {
+                        visible = false;
+                    }
+                });
+
+                if (visible && general && !fila.textContent.toLowerCase().includes(general)) {
+                    visible = false;
+                }
+
+                fila.style.display = visible ? '' : 'none';
+            });
+        }
+
+        poblarSelectsColumna();
+        filtrosColumna.forEach(function (control) {
+            control.addEventListener('input', aplicarFiltros);
+            control.addEventListener('change', aplicarFiltros);
+        });
+        buscadorGeneral.addEventListener('input', aplicarFiltros);
+    </script>
 </body>
 
 </html>
