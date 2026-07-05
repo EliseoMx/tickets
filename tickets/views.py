@@ -45,6 +45,10 @@ def inicio(request):
         'estadisticas': estadisticas,
     })
 
+
+def ayuda(request):
+    return render(request, 'tickets/ayuda.html')
+
 def puede_crear_usuarios(user):
     if not user.is_authenticated:
         return False

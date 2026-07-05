@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>¿Cómo funciono? - INCAP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .reloj {
+            font-size: 12px;
+            margin-top: 4px;
+            opacity: 0.85;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .version-sistema {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        .contenedor {
+            max-width: 750px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #2c3e50;
+        }
+
+        h3 {
+            color: #2c3e50;
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f4f5f7;
+            color: #2c3e50;
+            font-size: 13px;
+        }
+
+        .flujo {
+            margin-top: 20px;
+        }
+
+        .paso {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .paso-numero {
+            background-color: #2980b9;
+            color: white;
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .paso-texto {
+            padding-top: 4px;
+        }
+
+        .paso-texto strong {
+            color: #2c3e50;
+        }
+
+        .flecha {
+            text-align: center;
+            color: #aaa;
+            font-size: 20px;
+            margin: 2px 0 2px 16px;
+        }
+
+        .tips {
+            background: #eaf2f8;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin-top: 15px;
+        }
+
+        .tips li {
+            margin-bottom: 8px;
+        }
+
+        .volver {
+            display: inline-block;
+            margin-top: 25px;
+            color: #2980b9;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Atención al Cliente INCAP</h1>
+        <div class="reloj" id="reloj"></div>
+        <div class="version-sistema">{{ version_sistema }}</div>
+    </header>
+    <div class="contenedor">
+        <h2>¿Qué hago? ¿Cómo funciono?</h2>
+        <p>
+            Este sistema sirve para reportar problemas (incidentes) o pedir algo nuevo (requerimientos) a soporte,
+            darles seguimiento, y quedar avisado por correo cuando se resuelven.
+        </p>
+
+        <h3>Roles</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Rol</th>
+                    <th>Puede</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Super administrador</td>
+                    <td>Ver y editar todo, sin restricciones.</td>
+                </tr>
+                <tr>
+                    <td>Agente de Soporte</td>
+                    <td>Ver y atender todos los tickets de las empresas que tiene asignadas.</td>
+                </tr>
+                <tr>
+                    <td>Agente Cliente</td>
+                    <td>Levantar tickets, crear usuarios clientes de su empresa, y ver (solo lectura) los tickets de
+                        todos los usuarios de su empresa.</td>
+                </tr>
+                <tr>
+                    <td>Cliente</td>
+                    <td>Levantar tickets y ver/comentar únicamente los suyos.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Así funciona un ticket, paso a paso</h3>
+        <div class="flujo">
+            <div class="paso">
+                <div class="paso-numero">1</div>
+                <div class="paso-texto">
+                    <strong>Levantas un ticket.</strong><br>
+                    Eliges si es un incidente o un requerimiento, describes el problema, y si quieres, adjuntas hasta
+                    3 imágenes (5MB cada una) como evidencia.
+                </div>
+            </div>
+            <div class="flecha">↓</div>
+
+            <div class="paso">
+                <div class="paso-numero">2</div>
+                <div class="paso-texto">
+                    <strong>Soporte lo atiende.</strong><br>
+                    Va agregando actualizaciones sobre el avance. Tú también puedes comentar en cualquier momento
+                    mientras el ticket siga abierto.
+                </div>
+            </div>
+            <div class="flecha">↓</div>
+
+            <div class="paso">
+                <div class="paso-numero">3</div>
+                <div class="paso-texto">
+                    <strong>Soporte lo marca como resuelto.</strong><br>
+                    El ticket no se cierra de inmediato: pasa a "Pendiente de confirmación" y queda esperando tu
+                    respuesta.
+                </div>
+            </div>
+            <div class="flecha">↓</div>
+
+            <div class="paso">
+                <div class="paso-numero">4</div>
+                <div class="paso-texto">
+                    <strong>Tú confirmas.</strong><br>
+                    Si el problema quedó resuelto, confirmas el cierre. Si no, avisas y el ticket regresa a soporte.
+                    Si no respondes en 3 días, se cierra automáticamente.
+                </div>
+            </div>
+            <div class="flecha">↓</div>
+
+            <div class="paso">
+                <div class="paso-numero">5</div>
+                <div class="paso-texto">
+                    <strong>Se cierra el ticket.</strong><br>
+                    Se genera un PDF con todo el historial y se te manda un correo de aviso a ti y al agente que te
+                    atendió. Las imágenes ya quedaron guardadas en ese PDF antes de liberarse.
+                </div>
+            </div>
+            <div class="flecha">↓</div>
+
+            <div class="paso">
+                <div class="paso-numero">6</div>
+                <div class="paso-texto">
+                    <strong>¿Sigue sin resolverse?</strong><br>
+                    Soporte puede reabrir un ticket cerrado en cualquier momento.
+                </div>
+            </div>
+        </div>
+
+        <h3>Otras cosas útiles</h3>
+        <div class="tips">
+            <ul>
+                <li><strong>Filtros:</strong> en cada tabla del sistema (tickets, usuarios, empresas) hay una fila de
+                    filtros por columna, más un buscador general.</li>
+                <li><strong>Exportar:</strong> los botones "Exportar CSV" / "Exportar Excel" descargan exactamente lo
+                    que esté filtrado/visible en ese momento.</li>
+                <li><strong>Horas y fechas:</strong> siempre se muestran en tu propia zona horaria, sin importar desde
+                    dónde te conectes.</li>
+            </ul>
+        </div>
+
+        <a href="{% url 'inicio' %}" class="volver">← Volver a inicio</a>
+    </div>
+
+    <script>
+        (function () {
+            var zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            var coincidencia = document.cookie.match(/(?:^|; )django_timezone=([^;]*)/);
+            var zonaGuardada = coincidencia ? decodeURIComponent(coincidencia[1]) : null;
+
+            if (zonaHoraria && zonaHoraria !== zonaGuardada) {
+                document.cookie = 'django_timezone=' + encodeURIComponent(zonaHoraria) + ';path=/;max-age=31536000';
+                location.reload();
+                return;
+            }
+
+            function actualizarReloj() {
+                var el = document.getElementById('reloj');
+                if (!el) return;
+                var ahora = new Date();
+                var horas = String(ahora.getHours()).padStart(2, '0');
+                var minutos = String(ahora.getMinutes()).padStart(2, '0');
+                var segundos = String(ahora.getSeconds()).padStart(2, '0');
+                el.textContent = horas + ':' + minutos + ':' + segundos + ' (' + zonaHoraria + ')';
+            }
+            actualizarReloj();
+            setInterval(actualizarReloj, 1000);
+        })();
+    </script>
+</body>
+
+</html>
