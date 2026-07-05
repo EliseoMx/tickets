@@ -231,6 +231,7 @@
             <h1>Atención al Cliente INCAP</h1>
             <div class="reloj" id="reloj"></div>
             <div class="version-sistema">{{ version_sistema }}</div>
+            <a href="{% url 'ayuda' %}" class="boton-secundario" style="display:inline-block; margin-top:8px; font-size:12px; padding:5px 12px;">¿Qué hago? ¿Cómo funciono?</a>
         </div>
         {% if user.is_authenticated %}
         <span>
