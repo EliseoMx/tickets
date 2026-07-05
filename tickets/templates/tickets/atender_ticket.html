@@ -25,6 +25,12 @@
             font-variant-numeric: tabular-nums;
         }
 
+        .version-sistema {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
         .contenedor {
             max-width: 650px;
             margin: 50px auto;
@@ -208,6 +214,7 @@
     <header>
         <h1>Atención al Cliente INCAP</h1>
         <div class="reloj" id="reloj"></div>
+        <div class="version-sistema">{{ version_sistema }}</div>
     </header>
     <div class="contenedor">
         <h2>Ticket #{{ ticket.id }} — {{ ticket.titulo }}</h2>
