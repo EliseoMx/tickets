@@ -73,6 +73,7 @@
             border-radius: 5px;
             margin-top: 15px;
             margin-bottom: 15px;
+            transition: opacity 0.6s ease;
         }
 
         .mensaje.success {
@@ -140,6 +141,14 @@
             actualizarReloj();
             setInterval(actualizarReloj, 1000);
         })();
+    </script>
+    <script>
+        document.querySelectorAll('.mensaje').forEach(function (el) {
+            setTimeout(function () {
+                el.style.opacity = '0';
+                setTimeout(function () { el.style.display = 'none'; }, 600);
+            }, 3000);
+        });
     </script>
 </body>
 
