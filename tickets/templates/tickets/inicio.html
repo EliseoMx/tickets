@@ -26,6 +26,13 @@
             font-size: 20px;
         }
 
+        .reloj {
+            font-size: 12px;
+            margin-top: 4px;
+            opacity: 0.85;
+            font-variant-numeric: tabular-nums;
+        }
+
         .contenedor {
             max-width: 1000px;
             margin: 40px auto;
@@ -213,7 +220,10 @@
 
 <body>
     <header>
-        <h1>Atención al Cliente INCAP</h1>
+        <div>
+            <h1>Atención al Cliente INCAP</h1>
+            <div class="reloj" id="reloj"></div>
+        </div>
         {% if user.is_authenticated %}
         <span>
             {% if puede_atender_tickets %}
@@ -302,6 +312,32 @@
         </div>
         {% endif %}
     </div>
+
+    <script>
+        (function () {
+            var zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            var coincidencia = document.cookie.match(/(?:^|; )django_timezone=([^;]*)/);
+            var zonaGuardada = coincidencia ? decodeURIComponent(coincidencia[1]) : null;
+
+            if (zonaHoraria && zonaHoraria !== zonaGuardada) {
+                document.cookie = 'django_timezone=' + encodeURIComponent(zonaHoraria) + ';path=/;max-age=31536000';
+                location.reload();
+                return;
+            }
+
+            function actualizarReloj() {
+                var el = document.getElementById('reloj');
+                if (!el) return;
+                var ahora = new Date();
+                var horas = String(ahora.getHours()).padStart(2, '0');
+                var minutos = String(ahora.getMinutes()).padStart(2, '0');
+                var segundos = String(ahora.getSeconds()).padStart(2, '0');
+                el.textContent = horas + ':' + minutos + ':' + segundos + ' (' + zonaHoraria + ')';
+            }
+            actualizarReloj();
+            setInterval(actualizarReloj, 1000);
+        })();
+    </script>
 </body>
 
 </html>
