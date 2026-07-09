@@ -290,8 +290,10 @@ def restablecer_password(request, usuario_id):
     else:
         empresas_propias = request.user.empresas.all()
         usuario = get_object_or_404(
-            Usuario, id=usuario_id, rol=Usuario.Rol.CLIENTE,
-            empresas__in=empresas_propias, is_superuser=False
+            Usuario.objects.filter(
+                rol=Usuario.Rol.CLIENTE, empresas__in=empresas_propias, is_superuser=False
+            ).distinct(),
+            id=usuario_id
         )
 
     if request.method == 'POST':
@@ -311,6 +313,36 @@ def restablecer_password(request, usuario_id):
             f'Contraseña restablecida para "{usuario.username}". Nuevo PIN: {nueva_password} (cópialo ahora, no se volverá a mostrar). {aviso_correo}'
         )
         return redirect('lista_usuarios')
+
+    return redirect('lista_usuarios')
+
+
+@login_required
+def alternar_usuario_activo(request, usuario_id):
+    if not puede_crear_usuarios(request.user):
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('inicio')
+
+    if request.user.is_superuser:
+        usuario = get_object_or_404(Usuario, id=usuario_id)
+    else:
+        empresas_propias = request.user.empresas.all()
+        usuario = get_object_or_404(
+            Usuario.objects.filter(
+                rol=Usuario.Rol.CLIENTE, empresas__in=empresas_propias, is_superuser=False
+            ).distinct(),
+            id=usuario_id
+        )
+
+    if usuario == request.user:
+        messages.error(request, 'No puedes desactivar tu propia cuenta.')
+        return redirect('lista_usuarios')
+
+    if request.method == 'POST':
+        usuario.is_active = not usuario.is_active
+        usuario.save()
+        estado_texto = 'activado' if usuario.is_active else 'desactivado'
+        messages.success(request, f'Usuario "{usuario.username}" {estado_texto} correctamente.')
 
     return redirect('lista_usuarios')
 

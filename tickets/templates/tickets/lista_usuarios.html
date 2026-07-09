@@ -68,6 +68,10 @@
             font-size: 13px;
         }
 
+        .boton-secundario-pequeno {
+            background-color: #7f8c8d;
+        }
+
         .estado-activo {
             color: #27ae60;
             font-weight: bold;
@@ -299,6 +303,15 @@
                             onsubmit="return confirm('¿Restablecer la contraseña de {{ usuario.username }}?');">
                             {% csrf_token %}
                             <button type="submit" class="boton-pequeno">Restablecer contraseña</button>
+                        </form>
+                        <form method="post" action="{% url 'alternar_usuario_activo' usuario.id %}" style="display:inline;"
+                            onsubmit="return confirm('¿{% if usuario.is_active %}Desactivar{% else %}Activar{% endif %} a {{ usuario.username }}?');">
+                            {% csrf_token %}
+                            {% if usuario.is_active %}
+                            <button type="submit" class="boton-pequeno boton-secundario-pequeno" style="margin-top:4px;">Desactivar</button>
+                            {% else %}
+                            <button type="submit" class="boton-pequeno" style="margin-top:4px;">Activar</button>
+                            {% endif %}
                         </form>
                         {% endif %}
                         {% if request.user.is_superuser %}
