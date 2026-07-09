@@ -269,8 +269,6 @@
                     <td>{{ usuario.email|default:"—" }}</td>
                     <td>
                         {% if usuario.is_superuser %}
-                        <span class="etiqueta-rol rol-admin">Superadministrador</span>
-                        {% elif usuario.rol == 'admin' %}
                         <span class="etiqueta-rol rol-admin">Administrador</span>
                         {% elif usuario.rol == 'agente' %}
                         <span class="etiqueta-rol rol-agente">Agente Cliente</span>
