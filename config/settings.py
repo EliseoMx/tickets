@@ -166,7 +166,7 @@ ADMIN_PROTEGIDO_TELEFONO = os.environ.get('ADMIN_PROTEGIDO_TELEFONO', '')
 ADMIN_PROTEGIDO_PASSWORD = os.environ.get('ADMIN_PROTEGIDO_PASSWORD')
 
 # Textos personalizables del sistema (se muestran en el header y en inicio)
-NOMBRE_SISTEMA = os.environ.get('NOMBRE_SISTEMA', 'Atención al Cliente INCAP')
+NOMBRE_SISTEMA = os.environ.get('NOMBRE_SISTEMA', 'Atención al Cliente')
 TEXTO_SELECCION_EMPRESA = os.environ.get('TEXTO_SELECCION_EMPRESA', 'Selecciona una empresa')
 
 # Default primary key field type

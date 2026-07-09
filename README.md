@@ -1,10 +1,10 @@
-# Sistema de Tickets — INCAP
+# Sistema de Tickets
 
-Sistema interno de atención a clientes (soporte técnico) multi-empresa, hecho en Django. Permite que los clientes de varias empresas levanten incidentes o requerimientos, que un equipo de soporte los atienda, y que el cierre quede documentado y notificado por correo.
+Sistema interno de atención a clientes (soporte técnico) multi-empresa, hecho en Django. Permite que los clientes de varias empresas levanten incidentes o requerimientos, que un equipo de soporte los atienda, y que el cierre quede documentado y notificado por correo. El nombre mostrado en pantalla es configurable (ver `NOMBRE_SISTEMA` más abajo).
 
 ## ¿Qué hace el sistema?
 
-- Cada **empresa** (cliente de INCAP) tiene sus propios usuarios y tickets, aislados del resto.
+- Cada **empresa** (cliente del sistema) tiene sus propios usuarios y tickets, aislados del resto.
 - Los **clientes** levantan tickets (incidente o requerimiento), opcionalmente con imágenes de evidencia.
 - El equipo de **soporte** los atiende desde una bandeja, agrega actualizaciones y, al resolverlos, el ticket pasa a **pendiente de confirmación** en vez de cerrarse de inmediato.
 - El cliente confirma que quedó resuelto (o indica que no), y si no responde en 3 días el ticket se cierra solo.
@@ -79,7 +79,7 @@ flowchart TD
 
 Estas variables son opcionales (si no se definen, se usan los valores entre paréntesis):
 
-- `NOMBRE_SISTEMA` (`Atención al Cliente INCAP`): nombre mostrado en el header de todas las pantallas, en los títulos de pestaña y en los correos.
+- `NOMBRE_SISTEMA` (`Atención al Cliente`): nombre mostrado en el header de todas las pantallas, en los títulos de pestaña y en los correos.
 - `TEXTO_SELECCION_EMPRESA` (`Selecciona una empresa`): texto del encabezado en la pantalla de inicio.
 
 ## Stack
