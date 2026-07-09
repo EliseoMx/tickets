@@ -3,16 +3,17 @@ import io
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse
 from .forms import CrearUsuarioForm, EmpresaForm
 from .models import Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
-from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm
+from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm, CambiarPasswordForm
 from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen
 from .validators import validar_imagenes
-from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento
+from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento, enviar_correo_cambio_password
 from .utils import generar_pin
 from django.utils import timezone
 from datetime import timedelta
@@ -344,6 +345,64 @@ def alternar_usuario_activo(request, usuario_id):
 
 
 @login_required
+def eliminar_usuario_permanente(request, usuario_id):
+    if not request.user.is_superuser:
+        messages.error(request, 'Solo el administrador puede eliminar usuarios permanentemente.')
+        return redirect('inicio')
+
+    usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if usuario == request.user:
+        messages.error(request, 'No puedes eliminar tu propia cuenta.')
+        return redirect('lista_usuarios')
+
+    if request.method == 'POST':
+        tickets_usuario = Ticket.objects.filter(cliente=usuario)
+
+        for ticket in tickets_usuario.exclude(estado=Ticket.Estado.CERRADO):
+            try:
+                cerrar_ticket_definitivo(ticket, motivo=Ticket.MotivoCierre.ELIMINACION_USUARIO)
+            except Exception:
+                pass
+
+        tickets_usuario.update(cliente_eliminado_nombre=usuario.username)
+
+        nombre_usuario = usuario.username
+        usuario.delete()
+        messages.success(
+            request,
+            f'Usuario "{nombre_usuario}" eliminado permanentemente. Sus tickets se conservaron.'
+        )
+
+    return redirect('lista_usuarios')
+
+
+@login_required
+def cambiar_password(request):
+    if request.method == 'POST':
+        form = CambiarPasswordForm(request.POST, usuario=request.user)
+        if form.is_valid():
+            nueva_password = form.cleaned_data['nueva_password']
+            request.user.set_password(nueva_password)
+            request.user.save()
+            update_session_auth_hash(request, request.user)
+
+            correo_enviado = False
+            try:
+                correo_enviado = enviar_correo_cambio_password(request.user, nueva_password)
+            except Exception:
+                correo_enviado = False
+
+            aviso_correo = 'Se te envió un correo de confirmación.' if correo_enviado else 'No se pudo enviar el correo de aviso.'
+            messages.success(request, f'Tu contraseña se cambió correctamente. {aviso_correo}')
+            return redirect('inicio')
+    else:
+        form = CambiarPasswordForm(usuario=request.user)
+
+    return render(request, 'tickets/cambiar_password.html', {'form': form})
+
+
+@login_required
 def lista_empresas(request):
     if not puede_gestionar_empresas(request.user):
         messages.error(request, 'No tienes permiso para ver esta página.')
@@ -363,6 +422,8 @@ def crear_empresa(request):
         form = EmpresaForm(request.POST)
         if form.is_valid():
             empresa = form.save()
+            for administrador in Usuario.objects.filter(is_superuser=True):
+                administrador.empresas.add(empresa)
             messages.success(request, f'Empresa "{empresa.nombre}" creada correctamente.')
             return redirect('lista_empresas')
     else:
@@ -635,6 +696,10 @@ def reabrir_ticket(request, ticket_id):
     if not request.user.is_superuser and not request.user.empresas.filter(id=ticket.empresa_id).exists():
         messages.error(request, 'No tienes acceso a este ticket.')
         return redirect('bandeja_tickets')
+
+    if ticket.cliente is None:
+        messages.error(request, 'No se puede reabrir este ticket: el usuario que lo creó ya no existe.')
+        return redirect('atender_ticket', ticket_id=ticket.id)
 
     if request.method == 'POST':
         ticket.estado = Ticket.Estado.EN_PROCESO

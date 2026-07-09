@@ -58,6 +58,26 @@ def enviar_correo_restablecimiento(usuario, pin):
     return True
 
 
+def enviar_correo_cambio_password(usuario, pin):
+    if not usuario.email:
+        return False
+
+    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    asunto = 'Cambiaste tu contraseña - Sistema de Tickets INCAP'
+    cuerpo = (
+        f'Hola {usuario.username},\n\n'
+        'Tu contraseña (PIN de acceso) fue cambiada desde el sistema.\n\n'
+        f'Usuario: {usuario.username}\n'
+        f'Nueva contraseña: {pin}\n\n'
+        f'Puedes ingresar aquí: {liga}\n\n'
+        'Si tú no hiciste este cambio, contacta a soporte de inmediato.\n\n'
+        'Saludos,\nEquipo de soporte INCAP'
+    )
+    correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, [usuario.email])
+    correo.send(fail_silently=False)
+    return True
+
+
 def _texto_a_parrafos(texto):
     return texto.replace('\n', '<br/>')
 

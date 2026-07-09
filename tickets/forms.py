@@ -5,10 +5,12 @@ from .utils import generar_pin
 
 
 class CrearUsuarioForm(forms.ModelForm):
+    ROL_ADMINISTRADOR = 'administrador'
+
     empresas = forms.ModelMultipleChoiceField(
         queryset=Empresa.objects.none(),
         widget=forms.CheckboxSelectMultiple,
-        required=True,
+        required=False,
         label='Empresas con acceso',
     )
 
@@ -23,11 +25,12 @@ class CrearUsuarioForm(forms.ModelForm):
         creador = kwargs.pop('creador', None)
         super().__init__(*args, **kwargs)
         self.empresa_unica = None
+        self.permite_administrador = bool(creador and creador.is_superuser)
         self.fields['email'].required = True
         self.fields['telefono'].required = True
 
         if creador and creador.is_superuser:
-            self.fields['rol'].choices = Usuario.Rol.choices
+            self.fields['rol'].choices = list(Usuario.Rol.choices) + [(self.ROL_ADMINISTRADOR, 'Administrador')]
             empresas_disponibles = Empresa.objects.filter(activa=True)
         elif creador and creador.rol == Usuario.Rol.AGENTE:
             self.fields['rol'].choices = [(Usuario.Rol.CLIENTE, 'Cliente')]
@@ -44,13 +47,68 @@ class CrearUsuarioForm(forms.ModelForm):
             self.fields['empresas'].initial = [unica]
             self.fields['empresas'].widget = forms.MultipleHiddenInput()
 
+    def clean_rol(self):
+        rol = self.cleaned_data['rol']
+        self.quiere_ser_administrador = (rol == self.ROL_ADMINISTRADOR)
+        if self.quiere_ser_administrador:
+            return Usuario.Rol.CLIENTE
+        return rol
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not getattr(self, 'quiere_ser_administrador', False) and not cleaned_data.get('empresas'):
+            self.add_error('empresas', 'Debes seleccionar al menos una empresa.')
+        return cleaned_data
+
     def save(self, commit=True):
         usuario = super().save(commit=False)
         self.pin_generado = generar_pin()
         usuario.set_password(self.pin_generado)
+        if getattr(self, 'quiere_ser_administrador', False):
+            usuario.is_superuser = True
+            usuario.is_staff = True
         if commit:
             usuario.save()
         return usuario
+
+
+class CambiarPasswordForm(forms.Form):
+    password_actual = forms.CharField(
+        label='Contraseña actual',
+        widget=forms.PasswordInput(attrs={'inputmode': 'numeric', 'maxlength': 4, 'autocomplete': 'current-password'}),
+    )
+    nueva_password = forms.CharField(
+        label='Nueva contraseña (4 números)',
+        widget=forms.PasswordInput(attrs={'inputmode': 'numeric', 'maxlength': 4, 'autocomplete': 'new-password'}),
+    )
+    confirmar_password = forms.CharField(
+        label='Confirmar nueva contraseña',
+        widget=forms.PasswordInput(attrs={'inputmode': 'numeric', 'maxlength': 4, 'autocomplete': 'new-password'}),
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.usuario = kwargs.pop('usuario')
+        super().__init__(*args, **kwargs)
+
+    def clean_password_actual(self):
+        password_actual = self.cleaned_data['password_actual']
+        if not self.usuario.check_password(password_actual):
+            raise forms.ValidationError('La contraseña actual no es correcta.')
+        return password_actual
+
+    def clean_nueva_password(self):
+        nueva_password = self.cleaned_data['nueva_password']
+        if not nueva_password.isdigit() or len(nueva_password) != 4:
+            raise forms.ValidationError('La contraseña debe ser exactamente 4 números.')
+        return nueva_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        nueva_password = cleaned_data.get('nueva_password')
+        confirmar_password = cleaned_data.get('confirmar_password')
+        if nueva_password and confirmar_password and nueva_password != confirmar_password:
+            self.add_error('confirmar_password', 'Las contraseñas no coinciden.')
+        return cleaned_data
 
 
 class EmpresaForm(forms.ModelForm):

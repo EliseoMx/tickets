@@ -228,7 +228,8 @@
         <div class="detalle">
             <p><strong>Empresa:</strong> {{ ticket.empresa.nombre }}</p>
             <p><strong>Tipo:</strong> {{ ticket.get_tipo_display }}</p>
-            <p><strong>Cliente:</strong> {{ ticket.cliente.username }} ({{ ticket.cliente.email|default:"sin correo" }})
+            <p><strong>Cliente:</strong> {{ ticket.nombre_cliente }}
+                ({% if ticket.cliente %}{{ ticket.cliente.email|default:"sin correo" }}{% else %}cuenta eliminada{% endif %})
             </p>
             <p><strong>Contacto preferido:</strong> {{ ticket.get_medio_contacto_display }} — {{ ticket.dato_contacto }}
             </p>
@@ -297,11 +298,15 @@
             {% endif %}
         </div>
 
+        {% if ticket.cliente %}
         <form method="post" action="{% url 'reabrir_ticket' ticket.id %}"
             onsubmit="return confirm('¿Seguro que quieres reabrir este ticket?');">
             {% csrf_token %}
             <button type="submit" class="boton boton-reabrir">Reabrir ticket</button>
         </form>
+        {% else %}
+        <p style="color:#888; font-style:italic;">No se puede reabrir: el usuario que creó este ticket ya no existe.</p>
+        {% endif %}
         {% else %}
         <h3>Agregar actualización</h3>
         <form method="post" enctype="multipart/form-data">

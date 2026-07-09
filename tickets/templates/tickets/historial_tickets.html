@@ -262,7 +262,7 @@
                     <td><span class="etiqueta tipo-{{ ticket.tipo }}">{{ ticket.get_tipo_display }}</span></td>
                     <td>{{ ticket.titulo }}</td>
                     {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}
-                    <td>{{ ticket.cliente.username }}</td>
+                    <td>{{ ticket.nombre_cliente }}</td>
                     {% endif %}
                     <td><span class="etiqueta estado-{{ ticket.estado }}">{{ ticket.get_estado_display }}</span></td>
                     <td>{{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</td>

@@ -251,6 +251,7 @@
             {% endif %}
             Hola, {{ user.username }}
             ({% if user.is_superuser %}Administrador{% else %}{{ user.get_rol_display }}{% endif %}) —
+            <a href="{% url 'cambiar_password' %}" class="boton-secundario">Cambiar contraseña</a>
             <form method="post" action="{% url 'logout' %}" style="display: inline;">
                 {% csrf_token %}
                 <button type="submit" class="boton-secundario boton-link">Cerrar sesión</button>
