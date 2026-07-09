@@ -1,19 +1,24 @@
+import csv
+import io
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
-from django.utils.crypto import get_random_string
+from django.http import HttpResponse
 from .forms import CrearUsuarioForm, EmpresaForm
 from .models import Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
 from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm
 from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen
 from .validators import validar_imagenes
-from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos
+from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento
+from .utils import generar_pin
 from django.utils import timezone
 from datetime import timedelta
 
 DIAS_LIMITE_CONFIRMACION = 3
+COLUMNAS_PLANTILLA_USUARIOS = ['username', 'email', 'telefono', 'rol', 'empresas']
 
 
 def inicio(request):
@@ -75,12 +80,168 @@ def crear_usuario(request):
         if form.is_valid():
             nuevo_usuario = form.save()
             nuevo_usuario.empresas.set(form.cleaned_data['empresas'])
-            messages.success(request, f'Usuario "{nuevo_usuario.username}" creado correctamente.')
+
+            correo_enviado = False
+            try:
+                correo_enviado = enviar_correo_bienvenida(nuevo_usuario, form.pin_generado)
+            except Exception:
+                correo_enviado = False
+
+            aviso_correo = 'Se envió un correo con sus datos de acceso.' if correo_enviado else 'No se pudo enviar el correo de bienvenida.'
+            messages.success(
+                request,
+                f'Usuario "{nuevo_usuario.username}" creado correctamente. '
+                f'PIN de acceso: {form.pin_generado}. {aviso_correo}'
+            )
             return redirect('inicio')
     else:
         form = CrearUsuarioForm(creador=request.user)
 
     return render(request, 'tickets/crear_usuario.html', {'form': form})
+
+
+@login_required
+def descargar_plantilla_usuarios(request):
+    if not puede_crear_usuarios(request.user):
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('inicio')
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="plantilla_usuarios.csv"'
+    response.write('﻿')
+    writer = csv.writer(response)
+    writer.writerow(COLUMNAS_PLANTILLA_USUARIOS)
+
+    if request.user.is_superuser:
+        writer.writerow(['juan.perez', 'juan.perez@empresa.com', '5512345678', 'cliente', 'Empresa Ejemplo'])
+    else:
+        empresas_creador = request.user.empresas.filter(activa=True)
+        empresa_ejemplo = empresas_creador.first().nombre if empresas_creador.exists() else 'Empresa Ejemplo'
+        writer.writerow(['juan.perez', 'juan.perez@empresa.com', '5512345678', 'cliente', empresa_ejemplo])
+
+    return response
+
+
+@login_required
+def cargar_usuarios_masivo(request):
+    if not puede_crear_usuarios(request.user):
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('inicio')
+
+    if request.method == 'POST':
+        archivo = request.FILES.get('archivo')
+        if not archivo:
+            messages.error(request, 'Debes seleccionar un archivo CSV.')
+            return redirect('cargar_usuarios_masivo')
+
+        try:
+            texto = archivo.read().decode('utf-8-sig')
+        except UnicodeDecodeError:
+            messages.error(request, 'No se pudo leer el archivo. Verifica que sea un CSV válido.')
+            return redirect('cargar_usuarios_masivo')
+
+        lector = csv.DictReader(io.StringIO(texto))
+        columnas_esperadas = set(COLUMNAS_PLANTILLA_USUARIOS)
+        if not lector.fieldnames or not columnas_esperadas.issubset(set(lector.fieldnames)):
+            messages.error(
+                request,
+                'El archivo no tiene las columnas esperadas: ' + ', '.join(COLUMNAS_PLANTILLA_USUARIOS)
+            )
+            return redirect('cargar_usuarios_masivo')
+
+        if request.user.is_superuser:
+            empresas_permitidas = {e.nombre.lower(): e for e in Empresa.objects.filter(activa=True)}
+            roles_permitidos = {valor for valor, _ in Usuario.Rol.choices}
+        else:
+            empresas_permitidas = {e.nombre.lower(): e for e in request.user.empresas.filter(activa=True)}
+            roles_permitidos = {Usuario.Rol.CLIENTE}
+
+        filas_resultado = []
+        correctos = 0
+        incorrectos = 0
+
+        for fila in lector:
+            username = (fila.get('username') or '').strip()
+            email = (fila.get('email') or '').strip()
+            telefono = (fila.get('telefono') or '').strip()
+            rol = (fila.get('rol') or '').strip().lower() or Usuario.Rol.CLIENTE
+            empresas_texto = (fila.get('empresas') or '').strip()
+
+            errores = []
+
+            if not username:
+                errores.append('Falta el nombre de usuario')
+            elif Usuario.objects.filter(username=username).exists():
+                errores.append('El usuario ya existe')
+
+            if not email:
+                errores.append('Falta el correo')
+            elif '@' not in email:
+                errores.append('Correo inválido')
+
+            if not telefono:
+                errores.append('Falta el teléfono')
+
+            if rol not in roles_permitidos:
+                errores.append(f'Rol no permitido: "{rol}"')
+
+            empresas_obj = []
+            if empresas_texto:
+                for nombre in [n.strip() for n in empresas_texto.split(';') if n.strip()]:
+                    empresa = empresas_permitidas.get(nombre.lower())
+                    if empresa:
+                        empresas_obj.append(empresa)
+                    else:
+                        errores.append(f'No tienes acceso a la empresa "{nombre}" o no existe')
+            elif not request.user.is_superuser and empresas_permitidas:
+                empresas_obj = list(empresas_permitidas.values())
+            else:
+                errores.append('Debes indicar al menos una empresa')
+
+            contrasena_generada = ''
+            if not errores:
+                contrasena_generada = generar_pin()
+                nuevo_usuario = Usuario(username=username, email=email, telefono=telefono, rol=rol)
+                nuevo_usuario.set_password(contrasena_generada)
+                try:
+                    nuevo_usuario.full_clean(exclude=['password'])
+                    nuevo_usuario.save()
+                    nuevo_usuario.empresas.set(empresas_obj)
+                    resultado = 'Correcto'
+                    correctos += 1
+                    try:
+                        enviar_correo_bienvenida(nuevo_usuario, contrasena_generada)
+                    except Exception:
+                        pass
+                except Exception as error:
+                    contrasena_generada = ''
+                    resultado = 'Incorrecto: ' + str(error)
+                    incorrectos += 1
+            else:
+                resultado = 'Incorrecto: ' + '; '.join(errores)
+                incorrectos += 1
+
+            filas_resultado.append({
+                'username': username,
+                'email': email,
+                'telefono': telefono,
+                'rol': rol,
+                'empresas': empresas_texto,
+                'contraseña_generada': contrasena_generada,
+                'resultado': resultado,
+            })
+
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="resultado_carga_usuarios.csv"'
+        response.write('﻿')
+        columnas_salida = COLUMNAS_PLANTILLA_USUARIOS + ['contraseña_generada', 'resultado']
+        writer = csv.DictWriter(response, fieldnames=columnas_salida)
+        writer.writeheader()
+        for fila in filas_resultado:
+            writer.writerow(fila)
+        return response
+
+    return render(request, 'tickets/cargar_usuarios.html')
 
 
 @login_required
@@ -134,12 +295,20 @@ def restablecer_password(request, usuario_id):
         )
 
     if request.method == 'POST':
-        nueva_password = get_random_string(length=10)
+        nueva_password = generar_pin()
         usuario.password = make_password(nueva_password)
         usuario.save()
+
+        correo_enviado = False
+        try:
+            correo_enviado = enviar_correo_restablecimiento(usuario, nueva_password)
+        except Exception:
+            correo_enviado = False
+
+        aviso_correo = 'Se le envió un correo con el nuevo PIN.' if correo_enviado else 'No se pudo enviar el correo de aviso.'
         messages.success(
             request,
-            f'Contraseña restablecida para "{usuario.username}". Nueva contraseña: {nueva_password} (cópiala ahora, no se volverá a mostrar).'
+            f'Contraseña restablecida para "{usuario.username}". Nuevo PIN: {nueva_password} (cópialo ahora, no se volverá a mostrar). {aviso_correo}'
         )
         return redirect('lista_usuarios')
 

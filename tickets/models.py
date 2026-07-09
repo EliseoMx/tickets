@@ -25,6 +25,8 @@ class Usuario(AbstractUser):
         SOPORTE = 'soporte', 'Agente de Soporte'
         CLIENTE = 'cliente', 'Cliente'
 
+    email = models.EmailField('email address', blank=False)
+    telefono = models.CharField(max_length=20, blank=False, default='', help_text='Teléfono de contacto')
     rol = models.CharField(
         max_length=10,
         choices=Rol.choices,

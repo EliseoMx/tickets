@@ -151,6 +151,9 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_BCC_CIERRE = os.environ.get('EMAIL_BCC_CIERRE')
 
+# Liga pública donde vive el sistema (usada en correos, ej. bienvenida)
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
