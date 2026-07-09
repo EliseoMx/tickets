@@ -90,8 +90,7 @@ def crear_usuario(request):
             aviso_correo = 'Se envió un correo con sus datos de acceso.' if correo_enviado else 'No se pudo enviar el correo de bienvenida.'
             messages.success(
                 request,
-                f'Usuario "{nuevo_usuario.username}" creado correctamente. '
-                f'PIN de acceso: {form.pin_generado}. {aviso_correo}'
+                f'Usuario "{nuevo_usuario.username}" creado correctamente. {aviso_correo}'
             )
             return redirect('inicio')
     else:
@@ -198,7 +197,6 @@ def cargar_usuarios_masivo(request):
             else:
                 errores.append('Debes indicar al menos una empresa')
 
-            contrasena_generada = ''
             if not errores:
                 contrasena_generada = generar_pin()
                 nuevo_usuario = Usuario(username=username, email=email, telefono=telefono, rol=rol)
@@ -214,7 +212,6 @@ def cargar_usuarios_masivo(request):
                     except Exception:
                         pass
                 except Exception as error:
-                    contrasena_generada = ''
                     resultado = 'Incorrecto: ' + str(error)
                     incorrectos += 1
             else:
@@ -227,14 +224,13 @@ def cargar_usuarios_masivo(request):
                 'telefono': telefono,
                 'rol': rol,
                 'empresas': empresas_texto,
-                'contraseña_generada': contrasena_generada,
                 'resultado': resultado,
             })
 
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="resultado_carga_usuarios.csv"'
         response.write('﻿')
-        columnas_salida = COLUMNAS_PLANTILLA_USUARIOS + ['contraseña_generada', 'resultado']
+        columnas_salida = COLUMNAS_PLANTILLA_USUARIOS + ['resultado']
         writer = csv.DictWriter(response, fieldnames=columnas_salida)
         writer.writeheader()
         for fila in filas_resultado:
@@ -310,7 +306,7 @@ def restablecer_password(request, usuario_id):
         aviso_correo = 'Se le envió un correo con el nuevo PIN.' if correo_enviado else 'No se pudo enviar el correo de aviso.'
         messages.success(
             request,
-            f'Contraseña restablecida para "{usuario.username}". Nuevo PIN: {nueva_password} (cópialo ahora, no se volverá a mostrar). {aviso_correo}'
+            f'Contraseña restablecida para "{usuario.username}". {aviso_correo}'
         )
         return redirect('lista_usuarios')
 
