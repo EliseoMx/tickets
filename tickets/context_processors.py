@@ -27,6 +27,13 @@ def version(request):
     return {'version_sistema': _version_sistema()}
 
 
+def textos(request):
+    return {
+        'nombre_sistema': settings.NOMBRE_SISTEMA,
+        'texto_seleccion_empresa': settings.TEXTO_SELECCION_EMPRESA,
+    }
+
+
 def permisos(request):
     contexto = {
         'puede_crear_usuarios': puede_crear_usuarios(request.user),

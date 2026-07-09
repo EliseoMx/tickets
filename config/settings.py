@@ -71,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'tickets.context_processors.permisos',
                 'tickets.context_processors.version',
+                'tickets.context_processors.textos',
             ],
         },
     },
@@ -160,6 +161,10 @@ ADMIN_PROTEGIDO_USERNAME = os.environ.get('ADMIN_PROTEGIDO_USERNAME')
 ADMIN_PROTEGIDO_EMAIL = os.environ.get('ADMIN_PROTEGIDO_EMAIL', '')
 ADMIN_PROTEGIDO_TELEFONO = os.environ.get('ADMIN_PROTEGIDO_TELEFONO', '')
 ADMIN_PROTEGIDO_PASSWORD = os.environ.get('ADMIN_PROTEGIDO_PASSWORD')
+
+# Textos personalizables del sistema (se muestran en el header y en inicio)
+NOMBRE_SISTEMA = os.environ.get('NOMBRE_SISTEMA', 'Atención al Cliente INCAP')
+TEXTO_SELECCION_EMPRESA = os.environ.get('TEXTO_SELECCION_EMPRESA', 'Selecciona una empresa')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
