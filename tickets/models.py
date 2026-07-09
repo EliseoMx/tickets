@@ -50,6 +50,7 @@ class Ticket(models.Model):
     class MotivoCierre(models.TextChoices):
         CLIENTE = 'cliente', 'Confirmado por el cliente'
         AUTOMATICO = 'automatico', 'Cierre automático (sin respuesta)'
+        ELIMINACION_USUARIO = 'eliminacion_usuario', 'Cerrado por eliminación de usuario'
 
     class MedioContacto(models.TextChoices):
         TELEFONO = 'telefono', 'Teléfono'
@@ -57,7 +58,13 @@ class Ticket(models.Model):
         WHATSAPP = 'whatsapp', 'WhatsApp'
 
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='tickets')
-    cliente = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='tickets_creados')
+    cliente = models.ForeignKey(
+        Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets_creados'
+    )
+    cliente_eliminado_nombre = models.CharField(
+        max_length=150, blank=True,
+        help_text='Nombre de usuario guardado si el cliente fue eliminado permanentemente'
+    )
     tipo = models.CharField(max_length=15, choices=Tipo.choices)
     titulo = models.CharField(max_length=150)
     descripcion = models.TextField()
@@ -83,7 +90,7 @@ class Ticket(models.Model):
         null=True, blank=True,
         help_text='Si no hay confirmación del cliente antes de esta fecha, el ticket se cierra automáticamente'
     )
-    motivo_cierre = models.CharField(max_length=12, choices=MotivoCierre.choices, null=True, blank=True)
+    motivo_cierre = models.CharField(max_length=20, choices=MotivoCierre.choices, null=True, blank=True)
     pdf_cierre = models.FileField(
         upload_to='cierres/', null=True, blank=True, storage=RawMediaCloudinaryStorage()
     )
@@ -94,6 +101,12 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f"#{self.id} - {self.titulo}"
+
+    @property
+    def nombre_cliente(self):
+        if self.cliente:
+            return self.cliente.username
+        return self.cliente_eliminado_nombre or 'Usuario eliminado'
 
 class TicketActualizacion(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='actualizaciones')

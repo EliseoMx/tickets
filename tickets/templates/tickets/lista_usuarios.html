@@ -72,6 +72,10 @@
             background-color: #7f8c8d;
         }
 
+        .boton-peligro-pequeno {
+            background-color: #c0392b;
+        }
+
         .estado-activo {
             color: #27ae60;
             font-weight: bold;
@@ -317,6 +321,13 @@
                         {% if request.user.is_superuser %}
                         <a href="{% url 'editar_empresas_usuario' usuario.id %}" class="boton-pequeno"
                             style="text-decoration:none; display:inline-block; margin-top:4px;">Editar empresas</a>
+                        {% endif %}
+                        {% if request.user.is_superuser and usuario != request.user %}
+                        <form method="post" action="{% url 'eliminar_usuario_permanente' usuario.id %}" style="display:inline;"
+                            onsubmit="return confirm('¿ELIMINAR PERMANENTEMENTE a {{ usuario.username }}? Esta acción no se puede deshacer. Sus tickets abiertos se cerrarán y se conservarán, pero la cuenta desaparecerá para siempre.');">
+                            {% csrf_token %}
+                            <button type="submit" class="boton-pequeno boton-peligro-pequeno" style="margin-top:4px;">Eliminar permanente</button>
+                        </form>
                         {% endif %}
                         {% if usuario == request.user and not request.user.is_superuser %}—{% endif %}
                     </td>
