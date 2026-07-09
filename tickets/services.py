@@ -18,6 +18,46 @@ from .models import TicketImagen
 ESTILOS = getSampleStyleSheet()
 
 
+def enviar_correo_bienvenida(usuario, pin):
+    if not usuario.email:
+        return False
+
+    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    asunto = 'Bienvenido al Sistema de Tickets INCAP'
+    cuerpo = (
+        f'Hola {usuario.username},\n\n'
+        'Se creó tu cuenta en el Sistema de Tickets INCAP.\n\n'
+        f'Usuario: {usuario.username}\n'
+        f'PIN de acceso: {pin}\n\n'
+        f'Puedes ingresar aquí: {liga}\n\n'
+        'Te recomendamos guardar tu PIN en un lugar seguro.\n\n'
+        'Saludos,\nEquipo de soporte INCAP'
+    )
+    correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, [usuario.email])
+    correo.send(fail_silently=False)
+    return True
+
+
+def enviar_correo_restablecimiento(usuario, pin):
+    if not usuario.email:
+        return False
+
+    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    asunto = 'Tu contraseña fue restablecida - Sistema de Tickets INCAP'
+    cuerpo = (
+        f'Hola {usuario.username},\n\n'
+        'Tu contraseña (PIN de acceso) fue restablecida.\n\n'
+        f'Usuario: {usuario.username}\n'
+        f'Nuevo PIN: {pin}\n\n'
+        f'Puedes ingresar aquí: {liga}\n\n'
+        'Si tú no solicitaste este cambio, contacta a soporte.\n\n'
+        'Saludos,\nEquipo de soporte INCAP'
+    )
+    correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, [usuario.email])
+    correo.send(fail_silently=False)
+    return True
+
+
 def _texto_a_parrafos(texto):
     return texto.replace('\n', '<br/>')
 

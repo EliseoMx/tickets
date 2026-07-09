@@ -205,6 +205,9 @@
         <div class="exportar-botones">
             <button type="button" class="boton-exportar" onclick="exportarTabla('csv')">⬇ Exportar CSV</button>
             <button type="button" class="boton-exportar" onclick="exportarTabla('excel')">⬇ Exportar Excel</button>
+            {% if puede_crear_usuarios %}
+            <a href="{% url 'cargar_usuarios_masivo' %}" class="boton-pequeno" style="text-decoration:none; display:inline-block;">+ Carga masiva</a>
+            {% endif %}
         </div>
 
         <form method="get" id="form-filtros"></form>

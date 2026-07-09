@@ -280,6 +280,7 @@
             {% if puede_crear_usuarios %}
             <a href="{% url 'crear_usuario' %}" class="boton">Crear usuario</a>
             <a href="{% url 'lista_usuarios' %}" class="boton">Ver usuarios</a>
+            <a href="{% url 'cargar_usuarios_masivo' %}" class="boton">Carga masiva</a>
             {% endif %}
             {% if user.is_superuser %}
             <a href="{% url 'lista_empresas' %}" class="boton">Empresas</a>

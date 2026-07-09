@@ -7,6 +7,8 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='tickets/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='inicio'), name='logout'),
     path('usuarios/crear/', views.crear_usuario, name='crear_usuario'),
+    path('usuarios/plantilla/', views.descargar_plantilla_usuarios, name='descargar_plantilla_usuarios'),
+    path('usuarios/carga-masiva/', views.cargar_usuarios_masivo, name='cargar_usuarios_masivo'),
     path('usuarios/', views.lista_usuarios, name='lista_usuarios'),
     path('usuarios/<int:usuario_id>/restablecer-password/', views.restablecer_password, name='restablecer_password'),
     path('empresas/', views.lista_empresas, name='lista_empresas'),

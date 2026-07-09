@@ -1,10 +1,10 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
 from .models import TicketActualizacion, Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
+from .utils import generar_pin
 
 
-class CrearUsuarioForm(UserCreationForm):
+class CrearUsuarioForm(forms.ModelForm):
     empresas = forms.ModelMultipleChoiceField(
         queryset=Empresa.objects.none(),
         widget=forms.CheckboxSelectMultiple,
@@ -14,12 +14,17 @@ class CrearUsuarioForm(UserCreationForm):
 
     class Meta:
         model = Usuario
-        fields = ['username', 'email', 'rol', 'password1', 'password2']
+        fields = ['username', 'email', 'telefono', 'rol']
+        labels = {
+            'telefono': 'Teléfono de contacto',
+        }
 
     def __init__(self, *args, **kwargs):
         creador = kwargs.pop('creador', None)
         super().__init__(*args, **kwargs)
         self.empresa_unica = None
+        self.fields['email'].required = True
+        self.fields['telefono'].required = True
 
         if creador and creador.is_superuser:
             self.fields['rol'].choices = Usuario.Rol.choices
@@ -38,6 +43,14 @@ class CrearUsuarioForm(UserCreationForm):
             self.empresa_unica = unica
             self.fields['empresas'].initial = [unica]
             self.fields['empresas'].widget = forms.MultipleHiddenInput()
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        self.pin_generado = generar_pin()
+        usuario.set_password(self.pin_generado)
+        if commit:
+            usuario.save()
+        return usuario
 
 
 class EmpresaForm(forms.ModelForm):
