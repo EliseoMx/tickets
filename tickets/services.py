@@ -23,15 +23,15 @@ def enviar_correo_bienvenida(usuario, pin):
         return False
 
     liga = f'{settings.SITE_URL.rstrip("/")}/login/'
-    asunto = 'Bienvenido al Sistema de Tickets INCAP'
+    asunto = f'Bienvenido al {settings.NOMBRE_SISTEMA}'
     cuerpo = (
         f'Hola {usuario.username},\n\n'
-        'Se creó tu cuenta en el Sistema de Tickets INCAP.\n\n'
+        f'Se creó tu cuenta en el {settings.NOMBRE_SISTEMA}.\n\n'
         f'Usuario: {usuario.username}\n'
         f'PIN de acceso: {pin}\n\n'
         f'Puedes ingresar aquí: {liga}\n\n'
         'Te recomendamos guardar tu PIN en un lugar seguro.\n\n'
-        'Saludos,\nEquipo de soporte INCAP'
+        f'Saludos,\nEquipo de soporte {settings.NOMBRE_SISTEMA}'
     )
     correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, [usuario.email])
     correo.send(fail_silently=False)
@@ -43,7 +43,7 @@ def enviar_correo_restablecimiento(usuario, pin):
         return False
 
     liga = f'{settings.SITE_URL.rstrip("/")}/login/'
-    asunto = 'Tu contraseña fue restablecida - Sistema de Tickets INCAP'
+    asunto = f'Tu contraseña fue restablecida - {settings.NOMBRE_SISTEMA}'
     cuerpo = (
         f'Hola {usuario.username},\n\n'
         'Tu contraseña (PIN de acceso) fue restablecida.\n\n'
@@ -51,7 +51,7 @@ def enviar_correo_restablecimiento(usuario, pin):
         f'Nuevo PIN: {pin}\n\n'
         f'Puedes ingresar aquí: {liga}\n\n'
         'Si tú no solicitaste este cambio, contacta a soporte.\n\n'
-        'Saludos,\nEquipo de soporte INCAP'
+        f'Saludos,\nEquipo de soporte {settings.NOMBRE_SISTEMA}'
     )
     correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, [usuario.email])
     correo.send(fail_silently=False)
@@ -63,7 +63,7 @@ def enviar_correo_cambio_password(usuario, pin):
         return False
 
     liga = f'{settings.SITE_URL.rstrip("/")}/login/'
-    asunto = 'Cambiaste tu contraseña - Sistema de Tickets INCAP'
+    asunto = f'Cambiaste tu contraseña - {settings.NOMBRE_SISTEMA}'
     cuerpo = (
         f'Hola {usuario.username},\n\n'
         'Tu contraseña (PIN de acceso) fue cambiada desde el sistema.\n\n'
@@ -71,7 +71,7 @@ def enviar_correo_cambio_password(usuario, pin):
         f'Nueva contraseña: {pin}\n\n'
         f'Puedes ingresar aquí: {liga}\n\n'
         'Si tú no hiciste este cambio, contacta a soporte de inmediato.\n\n'
-        'Saludos,\nEquipo de soporte INCAP'
+        f'Saludos,\nEquipo de soporte {settings.NOMBRE_SISTEMA}'
     )
     correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, [usuario.email])
     correo.send(fail_silently=False)
@@ -170,7 +170,7 @@ def enviar_correo_cierre(ticket, pdf_bytes):
         f'El ticket #{ticket.id} ("{ticket.titulo}") de {ticket.cliente.username} ha sido cerrado.\n'
         f'Motivo: {ticket.get_motivo_cierre_display()}\n\n'
         'Adjuntamos un PDF con el historial completo de la atención.\n\n'
-        'Saludos,\nEquipo de soporte INCAP'
+        f'Saludos,\nEquipo de soporte {settings.NOMBRE_SISTEMA}'
     )
     correo = EmailMessage(
         asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, destinatarios, cc=copia, bcc=copia_oculta
