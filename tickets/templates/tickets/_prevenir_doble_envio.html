@@ -1,0 +1,8 @@
+<script>
+    document.addEventListener('submit', function (evento) {
+        if (evento.defaultPrevented) return;
+        evento.target.querySelectorAll('button[type="submit"]').forEach(function (boton) {
+            boton.disabled = true;
+        });
+    });
+</script>
