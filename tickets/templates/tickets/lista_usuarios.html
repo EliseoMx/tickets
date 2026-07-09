@@ -302,6 +302,9 @@
                     </td>
                     <td>{{ usuario.date_joined|date:"d/m/Y" }}</td>
                     <td>
+                        {% if usuario.protegido %}
+                        <span title="Cuenta protegida del sistema">🔒 Protegida</span>
+                        {% else %}
                         {% if usuario != request.user %}
                         <form method="post" action="{% url 'restablecer_password' usuario.id %}" style="display:inline;"
                             onsubmit="return confirm('¿Restablecer la contraseña de {{ usuario.username }}?');">
@@ -330,6 +333,7 @@
                         </form>
                         {% endif %}
                         {% if usuario == request.user and not request.user.is_superuser %}—{% endif %}
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}

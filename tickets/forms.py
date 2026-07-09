@@ -1,7 +1,7 @@
 from django import forms
 from .models import TicketActualizacion, Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
-from .utils import generar_pin
+from .utils import generar_pin, dato_reservado_para_protegido
 
 
 class CrearUsuarioForm(forms.ModelForm):
@@ -53,6 +53,24 @@ class CrearUsuarioForm(forms.ModelForm):
         if self.quiere_ser_administrador:
             return Usuario.Rol.CLIENTE
         return rol
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        if dato_reservado_para_protegido('username', username):
+            raise forms.ValidationError('Ese nombre de usuario está reservado.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if dato_reservado_para_protegido('email', email):
+            raise forms.ValidationError('Ese correo está reservado.')
+        return email
+
+    def clean_telefono(self):
+        telefono = self.cleaned_data['telefono']
+        if dato_reservado_para_protegido('telefono', telefono):
+            raise forms.ValidationError('Ese teléfono está reservado.')
+        return telefono
 
     def clean(self):
         cleaned_data = super().clean()

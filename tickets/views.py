@@ -14,7 +14,7 @@ from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm
 from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen
 from .validators import validar_imagenes
 from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento, enviar_correo_cambio_password
-from .utils import generar_pin
+from .utils import generar_pin, dato_reservado_para_protegido
 from django.utils import timezone
 from datetime import timedelta
 
@@ -173,14 +173,20 @@ def cargar_usuarios_masivo(request):
                 errores.append('Falta el nombre de usuario')
             elif Usuario.objects.filter(username=username).exists():
                 errores.append('El usuario ya existe')
+            elif dato_reservado_para_protegido('username', username):
+                errores.append('Ese nombre de usuario está reservado')
 
             if not email:
                 errores.append('Falta el correo')
             elif '@' not in email:
                 errores.append('Correo inválido')
+            elif dato_reservado_para_protegido('email', email):
+                errores.append('Ese correo está reservado')
 
             if not telefono:
                 errores.append('Falta el teléfono')
+            elif dato_reservado_para_protegido('telefono', telefono):
+                errores.append('Ese teléfono está reservado')
 
             if rol not in roles_permitidos:
                 errores.append(f'Rol no permitido: "{rol}"')
@@ -293,6 +299,10 @@ def restablecer_password(request, usuario_id):
             id=usuario_id
         )
 
+    if usuario.protegido:
+        messages.error(request, 'Esta es una cuenta protegida del sistema; no se puede modificar desde la interfaz.')
+        return redirect('lista_usuarios')
+
     if request.method == 'POST':
         nueva_password = generar_pin()
         usuario.password = make_password(nueva_password)
@@ -335,6 +345,10 @@ def alternar_usuario_activo(request, usuario_id):
         messages.error(request, 'No puedes desactivar tu propia cuenta.')
         return redirect('lista_usuarios')
 
+    if usuario.protegido:
+        messages.error(request, 'Esta es una cuenta protegida del sistema; no se puede modificar desde la interfaz.')
+        return redirect('lista_usuarios')
+
     if request.method == 'POST':
         usuario.is_active = not usuario.is_active
         usuario.save()
@@ -354,6 +368,10 @@ def eliminar_usuario_permanente(request, usuario_id):
 
     if usuario == request.user:
         messages.error(request, 'No puedes eliminar tu propia cuenta.')
+        return redirect('lista_usuarios')
+
+    if usuario.protegido:
+        messages.error(request, 'Esta es una cuenta protegida del sistema; no se puede eliminar.')
         return redirect('lista_usuarios')
 
     if request.method == 'POST':
@@ -438,6 +456,10 @@ def editar_empresas_usuario(request, usuario_id):
         return redirect('inicio')
 
     usuario = get_object_or_404(Usuario, id=usuario_id)
+
+    if usuario.protegido:
+        messages.error(request, 'Esta es una cuenta protegida del sistema; no se puede modificar desde la interfaz.')
+        return redirect('lista_usuarios')
 
     if request.method == 'POST':
         form = EditarEmpresasForm(request.POST, instance=usuario)
