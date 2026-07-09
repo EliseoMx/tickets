@@ -32,6 +32,10 @@ class Usuario(AbstractUser):
         default=Rol.CLIENTE,
     )
     empresas = models.ManyToManyField(Empresa, blank=True, related_name='usuarios')
+    protegido = models.BooleanField(
+        default=False,
+        help_text='Cuenta del sistema que no se puede desactivar, restablecer ni eliminar desde la interfaz'
+    )
 
     def __str__(self):
         return f"{self.username} ({self.get_rol_display()})"

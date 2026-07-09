@@ -154,6 +154,13 @@ EMAIL_BCC_CIERRE = os.environ.get('EMAIL_BCC_CIERRE')
 # Liga pública donde vive el sistema (usada en correos, ej. bienvenida)
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
+# Cuenta de administrador protegida: se crea sola después de cada `migrate` si no existe
+# (ver tickets/apps.py). Nunca se hardcodea aquí; vive únicamente en el .env de cada instalación.
+ADMIN_PROTEGIDO_USERNAME = os.environ.get('ADMIN_PROTEGIDO_USERNAME')
+ADMIN_PROTEGIDO_EMAIL = os.environ.get('ADMIN_PROTEGIDO_EMAIL', '')
+ADMIN_PROTEGIDO_TELEFONO = os.environ.get('ADMIN_PROTEGIDO_TELEFONO', '')
+ADMIN_PROTEGIDO_PASSWORD = os.environ.get('ADMIN_PROTEGIDO_PASSWORD')
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
