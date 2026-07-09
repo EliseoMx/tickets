@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>¿Cómo funciono? - INCAP</title>
+    <title>¿Cómo funciono? - {{ nombre_sistema }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -156,6 +156,49 @@
             margin: 2px 0 2px 16px;
         }
 
+        .flujo-visual {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 15px 0 25px 0;
+            padding: 20px 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .paso-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 92px;
+            text-align: center;
+        }
+
+        .icono-circulo {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .paso-visual span {
+            font-size: 11.5px;
+            color: #2c3e50;
+            line-height: 1.3;
+        }
+
+        .flecha-visual {
+            font-size: 20px;
+            color: #bbb;
+            margin-top: 17px;
+        }
+
         .tips {
             background: #eaf2f8;
             border-radius: 6px;
@@ -223,7 +266,40 @@
             </tbody>
         </table>
 
-        <h3>Así funciona un ticket, paso a paso</h3>
+        <h3>Así funciona un ticket, de un vistazo</h3>
+        <div class="flujo-visual">
+            <div class="paso-visual">
+                <div class="icono-circulo" style="background-color:#2980b9;">📝</div>
+                <span>Levantas el ticket</span>
+            </div>
+            <div class="flecha-visual">→</div>
+            <div class="paso-visual">
+                <div class="icono-circulo" style="background-color:#e67e22;">🔧</div>
+                <span>Soporte atiende</span>
+            </div>
+            <div class="flecha-visual">→</div>
+            <div class="paso-visual">
+                <div class="icono-circulo" style="background-color:#f1c40f;">✅</div>
+                <span>Marcado resuelto</span>
+            </div>
+            <div class="flecha-visual">→</div>
+            <div class="paso-visual">
+                <div class="icono-circulo" style="background-color:#9b59b6;">👤</div>
+                <span>Tú confirmas</span>
+            </div>
+            <div class="flecha-visual">→</div>
+            <div class="paso-visual">
+                <div class="icono-circulo" style="background-color:#16a085;">📄</div>
+                <span>Cierre + PDF por correo</span>
+            </div>
+            <div class="flecha-visual">↻</div>
+            <div class="paso-visual">
+                <div class="icono-circulo" style="background-color:#7f8c8d;">🔁</div>
+                <span>Reabrir si hace falta</span>
+            </div>
+        </div>
+
+        <h3>Paso a paso</h3>
         <div class="flujo">
             <div class="paso">
                 <div class="paso-numero">1</div>

@@ -23,6 +23,11 @@ Sistema interno de atención a clientes (soporte técnico) multi-empresa, hecho 
 El login acepta usuario **o correo electrónico**. El campo "Rol" al crear un usuario incluye la opción
 **Administrador** (visible solo para un super admin), que da acceso total sin necesidad de asignar empresas.
 
+Además existe una **cuenta de administrador protegida**: se crea sola después de cada `migrate` (si no
+existe todavía) con los datos del `.env`, y no se puede editar, desactivar ni eliminar desde la interfaz
+(ni siquiera por otro superadmin) — sirve como respaldo de acceso permanente al sistema. Ver la sección
+de Configuración.
+
 ## Flujo habitual de un ticket
 
 ```mermaid
@@ -64,11 +69,25 @@ flowchart TD
 - **Activar / desactivar**: soft-delete de usuarios — bloquea el login sin borrar su historial de tickets; reversible en cualquier momento.
 - **Eliminar permanentemente** (solo super admin): borra la cuenta de verdad. Sus tickets **nunca se borran**: los que sigan abiertos se cierran automáticamente (motivo "Cerrado por eliminación de usuario", con su correo de cierre normal) y se conserva el nombre de usuario en el historial aunque la cuenta ya no exista. Un ticket sin cliente ya no se puede reabrir.
 
+## Seguridad
+
+- **Bloqueo por fuerza bruta** (`django-axes`): las contraseñas son un PIN de 4 dígitos (10,000 combinaciones), así que el login se bloquea tras 5 intentos fallidos por combinación usuario+IP, con 15 minutos de enfriamiento. Se puede desbloquear manualmente con `python manage.py axes_reset`.
+- **Prevención de doble envío**: un script compartido (`_prevenir_doble_envio.html`) deshabilita el botón de cualquier formulario apenas se envía, para evitar duplicados por doble clic o conexión lenta. Respeta los diálogos de confirmación existentes (si se cancela, el botón no se deshabilita).
+- **Nunca se muestran contraseñas en pantalla**: los PIN (de bienvenida, restablecimiento o cambio propio) solo se envían por correo, nunca aparecen en la interfaz ni en los CSV de resultado.
+
+## Textos y marca configurables
+
+Estas variables son opcionales (si no se definen, se usan los valores entre paréntesis):
+
+- `NOMBRE_SISTEMA` (`Atención al Cliente INCAP`): nombre mostrado en el header de todas las pantallas, en los títulos de pestaña y en los correos.
+- `TEXTO_SELECCION_EMPRESA` (`Selecciona una empresa`): texto del encabezado en la pantalla de inicio.
+
 ## Stack
 
 - **Backend**: Django 5.2, SQLite (desarrollo).
 - **Imágenes y PDFs**: Cloudinary (`django-cloudinary-storage`).
 - **Correo**: SMTP (Gmail).
+- **Seguridad**: `django-axes` (bloqueo de login).
 - **Frontend**: HTML/CSS/JS simple por plantilla, sin frameworks ni build step.
 
 ## Configuración
@@ -78,9 +97,8 @@ flowchart TD
    - `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`
    - `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` (contraseña de aplicación de Gmail)
    - `EMAIL_BCC_CIERRE` (correo que siempre recibe copia oculta al cerrar un ticket)
+   - `ADMIN_PROTEGIDO_USERNAME`, `ADMIN_PROTEGIDO_EMAIL`, `ADMIN_PROTEGIDO_TELEFONO`, `ADMIN_PROTEGIDO_PASSWORD`
+     (opcional pero recomendado: datos de la cuenta protegida que se crea sola; nunca subir estos valores a git)
+   - `NOMBRE_SISTEMA`, `TEXTO_SELECCION_EMPRESA` (opcional, ver sección de textos configurables)
 3. `python manage.py migrate`
 4. `python manage.py runserver`
-
-## Pendientes conocidos
-
-- Hay 3 imágenes antiguas (subidas antes de corregir la configuración de storage) que quedaron apuntando a archivos que nunca llegaron a Cloudinary. Están identificadas pero aún no re-subidas.
