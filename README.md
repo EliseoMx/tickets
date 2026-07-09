@@ -15,12 +15,13 @@ Sistema interno de atención a clientes (soporte técnico) multi-empresa, hecho 
 
 | Rol | Puede |
 |---|---|
-| **Super admin** | Ver y editar todo, sin restricciones |
+| **Super admin** | Ver y editar todo, sin restricciones, en todas las empresas (incluidas las que se creen después). Puede crear otros administradores y eliminar usuarios permanentemente |
 | **Agente de Soporte** | Ver y atender todos los tickets de sus empresas asignadas (bandeja, actualizaciones, cierres) |
-| **Agente Cliente** | Levantar tickets, crear usuarios clientes de su empresa, ver (solo lectura) los tickets de todos los usuarios de su empresa |
+| **Agente Cliente** | Levantar tickets, crear usuarios clientes de su empresa, activarlos/desactivarlos, restablecerles la contraseña, y ver (solo lectura) los tickets de todos los usuarios de su empresa |
 | **Cliente** | Levantar tickets y ver/comentar únicamente los suyos |
 
-El login acepta usuario **o correo electrónico**.
+El login acepta usuario **o correo electrónico**. El campo "Rol" al crear un usuario incluye la opción
+**Administrador** (visible solo para un super admin), que da acceso total sin necesidad de asignar empresas.
 
 ## Flujo habitual de un ticket
 
@@ -52,6 +53,16 @@ flowchart TD
 - **Zona horaria**: la base de datos guarda todo en UTC. Un middleware (`tickets/middleware.py`) detecta la zona horaria del navegador de cada visitante (vía cookie) y localiza automáticamente todas las fechas mostradas y exportadas — sin tocar cómo se almacenan.
 - **Reloj y versión del sistema**: en el header de cada pantalla se muestra la hora en vivo con su zona horaria, y debajo la versión del sistema (`v<commits> (<hash>)`), calculada automáticamente desde el historial de git — avanza sola con cada commit/merge.
 - **Borrado de empresas**: es un soft-delete (se marca `eliminada=True` y se renombra con fecha), nunca se borra de verdad para conservar el historial de tickets.
+- **Empresas nuevas**: al crearse, se vinculan automáticamente a todos los administradores existentes.
+- **Página de ayuda**: dentro del sistema, con explicación de roles y del flujo de un ticket para cualquier usuario.
+
+## Gestión de usuarios y contraseñas
+
+- **Alta de usuarios**: individual o por **carga masiva** (CSV con plantilla descargable). En ambos casos se genera un **PIN numérico de 4 dígitos** como contraseña y se manda un **correo de bienvenida** con los datos de acceso — el PIN nunca se muestra en pantalla ni en el CSV de resultado, solo llega por correo.
+- **Restablecer contraseña**: un Agente Cliente o el administrador puede generarle un PIN nuevo a otro usuario; se le avisa por correo, sin exponerlo en pantalla.
+- **Cambiar mi contraseña**: cualquier usuario logueado puede cambiar su propia contraseña desde el botón junto a "Cerrar sesión". Pide la contraseña actual, valida que la nueva sea de 4 números, avisa por correo, y no cierra la sesión.
+- **Activar / desactivar**: soft-delete de usuarios — bloquea el login sin borrar su historial de tickets; reversible en cualquier momento.
+- **Eliminar permanentemente** (solo super admin): borra la cuenta de verdad. Sus tickets **nunca se borran**: los que sigan abiertos se cierran automáticamente (motivo "Cerrado por eliminación de usuario", con su correo de cierre normal) y se conserva el nombre de usuario en el historial aunque la cuenta ya no exista. Un ticket sin cliente ya no se puede reabrir.
 
 ## Stack
 
