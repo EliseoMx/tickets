@@ -228,38 +228,12 @@
 <body>
     <header>
         <div>
-            <h1>Atención al Cliente INCAP</h1>
+            <h1><a href="{% url 'inicio' %}" style="color:inherit; text-decoration:none;">{{ nombre_sistema }}</a></h1>
             <div class="reloj" id="reloj"></div>
             <div class="version-sistema">{{ version_sistema }}</div>
             <a href="{% url 'ayuda' %}" class="boton-secundario" style="display:inline-block; margin-top:8px; font-size:12px; padding:5px 12px;">¿Qué hago? ¿Cómo funciono?</a>
         </div>
-        {% if user.is_authenticated %}
-        <span>
-            {% if puede_atender_tickets %}
-            <a href="{% url 'bandeja_tickets' %}" class="boton-secundario boton-notificacion">
-                Atender tickets
-                {% if tickets_pendientes_count > 0 %}
-                <span class="badge">{{ tickets_pendientes_count }}</span>
-                {% endif %}
-                {% if tickets_respuesta_cliente_count > 0 %}
-                <span class="badge badge-cliente">
-                    {{ tickets_respuesta_cliente_count }}
-                    comentarios nuevos
-                </span>
-                {% endif %}
-            </a>
-            {% endif %}
-            Hola, {{ user.username }}
-            ({% if user.is_superuser %}Administrador{% else %}{{ user.get_rol_display }}{% endif %}) —
-            <a href="{% url 'cambiar_password' %}" class="boton-secundario">Cambiar contraseña</a>
-            <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                {% csrf_token %}
-                <button type="submit" class="boton-secundario boton-link">Cerrar sesión</button>
-            </form>
-        </span>
-        {% else %}
-        <a href="{% url 'login' %}" class="boton-secundario">Iniciar sesión</a>
-        {% endif %}
+        {% include 'tickets/_barra_usuario.html' %}
     </header>
 
     <div class="contenedor">
@@ -310,7 +284,7 @@
         {% endif %}
 
         {% if user.is_authenticated %}
-        <h2>Selecciona una empresa</h2>
+        <h2>{{ texto_seleccion_empresa }}</h2>
         <div class="grid-empresas">
             {% for empresa in empresas_usuario %}
             <a href="{% url 'portal_empresa' empresa.id %}" class="tarjeta-empresa">

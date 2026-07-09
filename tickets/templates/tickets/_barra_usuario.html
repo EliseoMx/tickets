@@ -1,0 +1,27 @@
+{% if user.is_authenticated %}
+<span>
+    {% if puede_atender_tickets %}
+    <a href="{% url 'bandeja_tickets' %}" class="boton-secundario boton-notificacion">
+        Atender tickets
+        {% if tickets_pendientes_count > 0 %}
+        <span class="badge">{{ tickets_pendientes_count }}</span>
+        {% endif %}
+        {% if tickets_respuesta_cliente_count > 0 %}
+        <span class="badge badge-cliente">
+            {{ tickets_respuesta_cliente_count }}
+            comentarios nuevos
+        </span>
+        {% endif %}
+    </a>
+    {% endif %}
+    Hola, {{ user.username }}
+    ({% if user.is_superuser %}Administrador{% else %}{{ user.get_rol_display }}{% endif %}) —
+    <a href="{% url 'cambiar_password' %}" class="boton-secundario">Cambiar contraseña</a>
+    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="boton-secundario boton-link">Cerrar sesión</button>
+    </form>
+</span>
+{% else %}
+<a href="{% url 'login' %}" class="boton-secundario">Iniciar sesión</a>
+{% endif %}
