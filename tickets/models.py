@@ -20,7 +20,6 @@ class Empresa(models.Model):
 
 class Usuario(AbstractUser):
     class Rol(models.TextChoices):
-        ADMIN = 'admin', 'Administrador'
         AGENTE = 'agente', 'Agente Cliente'
         SOPORTE = 'soporte', 'Agente de Soporte'
         CLIENTE = 'cliente', 'Cliente'
