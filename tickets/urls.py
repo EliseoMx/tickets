@@ -11,6 +11,7 @@ urlpatterns = [
     path('usuarios/carga-masiva/', views.cargar_usuarios_masivo, name='cargar_usuarios_masivo'),
     path('usuarios/', views.lista_usuarios, name='lista_usuarios'),
     path('usuarios/<int:usuario_id>/restablecer-password/', views.restablecer_password, name='restablecer_password'),
+    path('usuarios/<int:usuario_id>/alternar-activo/', views.alternar_usuario_activo, name='alternar_usuario_activo'),
     path('empresas/', views.lista_empresas, name='lista_empresas'),
     path('empresas/crear/', views.crear_empresa, name='crear_empresa'),
     path('usuarios/<int:usuario_id>/editar-empresas/', views.editar_empresas_usuario, name='editar_empresas_usuario'),
