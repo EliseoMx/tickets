@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from .forms import CrearUsuarioForm, EmpresaForm
 from .models import Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
@@ -22,6 +22,24 @@ DIAS_LIMITE_CONFIRMACION = 3
 COLUMNAS_PLANTILLA_USUARIOS = ['username', 'email', 'telefono', 'rol', 'empresas']
 
 
+def calcular_estadisticas(user):
+    if not puede_atender_tickets(user):
+        return None
+
+    if user.is_superuser:
+        base = Ticket.objects.all()
+    else:
+        empresas_soporte = user.empresas.all()
+        base = Ticket.objects.filter(empresa__in=empresas_soporte)
+
+    return {
+        'total': base.count(),
+        'nuevos': base.exclude(estado=Ticket.Estado.CERRADO).filter(actualizaciones__isnull=True).distinct().count(),
+        'en_proceso': base.filter(estado=Ticket.Estado.EN_PROCESO).count(),
+        'respuesta_cliente': base.filter(requiere_atencion=True).count(),
+    }
+
+
 def inicio(request):
     empresas_usuario = []
     estadisticas = None
@@ -32,19 +50,7 @@ def inicio(request):
         else:
             empresas_usuario = request.user.empresas.filter(activa=True).order_by('nombre')
 
-        if puede_atender_tickets(request.user):
-            if request.user.is_superuser:
-                base = Ticket.objects.all()
-            else:
-                empresas_soporte = request.user.empresas.all()
-                base = Ticket.objects.filter(empresa__in=empresas_soporte)
-
-            estadisticas = {
-                'total': base.count(),
-                'nuevos': base.exclude(estado=Ticket.Estado.CERRADO).filter(actualizaciones__isnull=True).distinct().count(),
-                'en_proceso': base.filter(estado=Ticket.Estado.EN_PROCESO).count(),
-                'respuesta_cliente': base.filter(requiere_atencion=True).count(),
-            }
+        estadisticas = calcular_estadisticas(request.user)
 
     return render(request, 'tickets/inicio.html', {
         'empresas_usuario': empresas_usuario,
@@ -68,6 +74,32 @@ def puede_atender_tickets(user):
     if not user.is_authenticated:
         return False
     return user.is_superuser or user.rol == Usuario.Rol.SOPORTE
+
+
+def contar_notificaciones(user):
+    if not puede_atender_tickets(user):
+        return 0, 0
+
+    if user.is_superuser:
+        base = Ticket.objects.filter(estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROCESO])
+    else:
+        empresas_soporte = user.empresas.all()
+        base = Ticket.objects.filter(
+            empresa__in=empresas_soporte,
+            estado__in=[Ticket.Estado.ABIERTO, Ticket.Estado.EN_PROCESO]
+        )
+
+    return base.count(), base.filter(requiere_atencion=True).count()
+
+
+@login_required
+def notificaciones_estado(request):
+    pendientes, respuesta_cliente = contar_notificaciones(request.user)
+    return JsonResponse({
+        'tickets_pendientes_count': pendientes,
+        'tickets_respuesta_cliente_count': respuesta_cliente,
+        'estadisticas': calcular_estadisticas(request.user) or {},
+    })
 
 
 @login_required

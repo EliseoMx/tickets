@@ -15,6 +15,15 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+
+    if len(sys.argv) >= 2 and sys.argv[1] == 'runserver':
+        tiene_puerto_explicito = any(not arg.startswith('-') for arg in sys.argv[2:])
+        if not tiene_puerto_explicito:
+            from pathlib import Path
+            from dotenv import load_dotenv
+            load_dotenv(Path(__file__).resolve().parent / '.env')
+            sys.argv.insert(2, os.environ.get('PORT', '8000'))
+
     execute_from_command_line(sys.argv)
 
 

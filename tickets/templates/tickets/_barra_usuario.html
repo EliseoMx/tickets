@@ -3,15 +3,8 @@
     {% if puede_atender_tickets %}
     <a href="{% url 'bandeja_tickets' %}" class="boton-secundario boton-notificacion">
         Atender tickets
-        {% if tickets_pendientes_count > 0 %}
-        <span class="badge">{{ tickets_pendientes_count }}</span>
-        {% endif %}
-        {% if tickets_respuesta_cliente_count > 0 %}
-        <span class="badge badge-cliente">
-            {{ tickets_respuesta_cliente_count }}
-            comentarios nuevos
-        </span>
-        {% endif %}
+        <span id="badge-pendientes" class="badge" style="{% if tickets_pendientes_count == 0 %}display:none;{% endif %}">{{ tickets_pendientes_count }}</span>
+        <span id="badge-respuesta-cliente" class="badge badge-cliente" style="{% if tickets_respuesta_cliente_count == 0 %}display:none;{% endif %}">{{ tickets_respuesta_cliente_count }} comentarios nuevos</span>
     </a>
     {% endif %}
     Hola, {{ user.username }}

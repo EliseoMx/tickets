@@ -265,19 +265,19 @@
         {% if estadisticas %}
         <div class="grid-estadisticas">
             <a href="{% url 'bandeja_tickets' %}?filtro=todos" class="tarjeta-stat stat-total">
-                <div class="stat-numero">{{ estadisticas.total }}</div>
+                <div class="stat-numero" id="stat-total">{{ estadisticas.total }}</div>
                 <div class="stat-label">Tickets totales</div>
             </a>
             <a href="{% url 'bandeja_tickets' %}?filtro=nuevos" class="tarjeta-stat stat-nuevos">
-                <div class="stat-numero">{{ estadisticas.nuevos }}</div>
+                <div class="stat-numero" id="stat-nuevos">{{ estadisticas.nuevos }}</div>
                 <div class="stat-label">Nuevos (sin atender)</div>
             </a>
             <a href="{% url 'bandeja_tickets' %}?filtro=en_proceso" class="tarjeta-stat stat-proceso">
-                <div class="stat-numero">{{ estadisticas.en_proceso }}</div>
+                <div class="stat-numero" id="stat-en-proceso">{{ estadisticas.en_proceso }}</div>
                 <div class="stat-label">En proceso</div>
             </a>
             <a href="{% url 'bandeja_tickets' %}?filtro=respuesta_cliente" class="tarjeta-stat stat-respuesta">
-                <div class="stat-numero">{{ estadisticas.respuesta_cliente }}</div>
+                <div class="stat-numero" id="stat-respuesta-cliente">{{ estadisticas.respuesta_cliente }}</div>
                 <div class="stat-label">Comentarios nuevos del cliente</div>
             </a>
         </div>
@@ -332,6 +332,7 @@
         });
     </script>
     {% include 'tickets/_prevenir_doble_envio.html' %}
+    {% include 'tickets/_polling_notificaciones.html' %}
 </body>
 
 </html>
