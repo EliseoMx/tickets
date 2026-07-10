@@ -1,6 +1,8 @@
 import csv
 import io
 
+import requests
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
@@ -12,7 +14,7 @@ from .models import Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
 from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm, CambiarPasswordForm
 from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen
-from .validators import validar_imagenes
+from .validators import validar_archivos_adjuntos
 from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento, enviar_correo_cambio_password
 from .utils import generar_pin, dato_reservado_para_protegido
 from django.utils import timezone
@@ -545,7 +547,7 @@ def crear_ticket(request, empresa_id, tipo):
     if request.method == 'POST':
         form = TicketForm(request.POST, usuario=request.user)
         imagenes = request.FILES.getlist('imagenes')
-        errores_imagenes = validar_imagenes(imagenes)
+        errores_imagenes = validar_archivos_adjuntos(imagenes)
 
         if form.is_valid() and not errores_imagenes:
             ticket = form.save(commit=False)
@@ -555,7 +557,7 @@ def crear_ticket(request, empresa_id, tipo):
             ticket.save()
 
             for imagen in imagenes:
-                TicketImagen.objects.create(ticket=ticket, imagen=imagen)
+                TicketImagen.objects.create(ticket=ticket, imagen=imagen, nombre_original=imagen.name)
 
             return redirect('ticket_creado', ticket_id=ticket.id)
         else:
@@ -696,7 +698,7 @@ def atender_ticket(request, ticket_id):
     if request.method == 'POST' and not esta_bloqueado:
         form = ActualizacionTicketForm(request.POST)
         imagenes = request.FILES.getlist('imagenes')
-        errores_imagenes = validar_imagenes(imagenes)
+        errores_imagenes = validar_archivos_adjuntos(imagenes)
 
         if form.is_valid() and not errores_imagenes:
             actualizacion = form.save(commit=False)
@@ -705,7 +707,7 @@ def atender_ticket(request, ticket_id):
             actualizacion.save()
 
             for imagen in imagenes:
-                TicketImagen.objects.create(actualizacion=actualizacion, imagen=imagen)
+                TicketImagen.objects.create(actualizacion=actualizacion, imagen=imagen, nombre_original=imagen.name)
 
             ticket.requiere_atencion = False
 
@@ -874,6 +876,36 @@ def eliminar_empresa(request, empresa_id):
 
     return redirect('lista_empresas')
 
+
+@login_required
+def descargar_adjunto(request, imagen_id):
+    adjunto = get_object_or_404(TicketImagen, id=imagen_id)
+    ticket = adjunto.ticket or (adjunto.actualizacion.ticket if adjunto.actualizacion else None)
+
+    if not ticket:
+        messages.error(request, 'No se pudo encontrar el ticket de este archivo.')
+        return redirect('inicio')
+
+    tiene_acceso = (
+        request.user.is_superuser
+        or ticket.cliente == request.user
+        or puede_ver_tickets_de_empresa(request.user, ticket.empresa)
+    )
+    if not tiene_acceso:
+        messages.error(request, 'No tienes acceso a este archivo.')
+        return redirect('inicio')
+
+    respuesta_externa = requests.get(adjunto.imagen.url, timeout=15)
+    respuesta_externa.raise_for_status()
+
+    content_type = 'application/pdf' if adjunto.es_pdf else respuesta_externa.headers.get(
+        'content-type', 'application/octet-stream'
+    )
+    respuesta = HttpResponse(respuesta_externa.content, content_type=content_type)
+    respuesta['Content-Disposition'] = f'attachment; filename="{adjunto.nombre_archivo}"'
+    return respuesta
+
+
 @login_required
 def ver_ticket_cliente(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -888,7 +920,7 @@ def ver_ticket_cliente(request, ticket_id):
     if request.method == 'POST' and es_dueno and ticket.estado != Ticket.Estado.CERRADO:
         form = ComentarioClienteForm(request.POST)
         imagenes = request.FILES.getlist('imagenes')
-        errores_imagenes = validar_imagenes(imagenes)
+        errores_imagenes = validar_archivos_adjuntos(imagenes)
 
         if form.is_valid() and not errores_imagenes:
             comentario = form.save(commit=False)
@@ -898,7 +930,7 @@ def ver_ticket_cliente(request, ticket_id):
             comentario.save()
 
             for imagen in imagenes:
-                TicketImagen.objects.create(actualizacion=comentario, imagen=imagen)
+                TicketImagen.objects.create(actualizacion=comentario, imagen=imagen, nombre_original=imagen.name)
 
             ticket.requiere_atencion = True
             ticket.save()

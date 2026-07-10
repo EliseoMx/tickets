@@ -32,4 +32,5 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/rechazar-cierre/', views.rechazar_cierre_ticket, name='rechazar_cierre_ticket'),
     path('ayuda/', views.ayuda, name='ayuda'),
     path('notificaciones/estado/', views.notificaciones_estado, name='notificaciones_estado'),
+    path('adjuntos/<int:imagen_id>/descargar/', views.descargar_adjunto, name='descargar_adjunto'),
 ]

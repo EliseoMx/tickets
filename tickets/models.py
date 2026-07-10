@@ -1,6 +1,18 @@
+import os
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from cloudinary_storage.storage import RawMediaCloudinaryStorage
+
+from .storage import AdjuntoTicketStorage
+
+
+def ruta_adjunto_ticket(instance, filename):
+    """PDFs van a una carpeta aparte: así el storage puede saber si debe subirlos
+    como recurso 'raw' (para que se descarguen) sin depender de la extensión, que
+    Cloudinary no conserva en el nombre guardado."""
+    carpeta = 'tickets/pdf' if filename.lower().endswith('.pdf') else 'tickets'
+    return f'{carpeta}/{filename}'
 
 
 class Empresa(models.Model):
@@ -133,7 +145,11 @@ class TicketImagen(models.Model):
     actualizacion = models.ForeignKey(
         TicketActualizacion, on_delete=models.CASCADE, null=True, blank=True, related_name='imagenes'
     )
-    imagen = models.ImageField(upload_to='tickets/')
+    imagen = models.FileField(upload_to=ruta_adjunto_ticket, storage=AdjuntoTicketStorage())
+    nombre_original = models.CharField(
+        max_length=255, blank=True,
+        help_text='Nombre del archivo tal como lo subió el usuario (Cloudinary no conserva la extensión)'
+    )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -142,3 +158,11 @@ class TicketImagen(models.Model):
 
     def __str__(self):
         return f"Imagen de ticket #{self.ticket_id or self.actualizacion.ticket_id}"
+
+    @property
+    def nombre_archivo(self):
+        return self.nombre_original or os.path.basename(self.imagen.name)
+
+    @property
+    def es_pdf(self):
+        return self.nombre_archivo.lower().endswith('.pdf')
