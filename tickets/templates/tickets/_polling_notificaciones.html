@@ -1,0 +1,37 @@
+{% if puede_atender_tickets %}
+<script>
+    (function () {
+        function actualizarNotificaciones() {
+            fetch('{% url "notificaciones_estado" %}')
+                .then(function (respuesta) { return respuesta.json(); })
+                .then(function (datos) {
+                    var badgePendientes = document.getElementById('badge-pendientes');
+                    var badgeRespuesta = document.getElementById('badge-respuesta-cliente');
+                    if (badgePendientes) {
+                        badgePendientes.textContent = datos.tickets_pendientes_count;
+                        badgePendientes.style.display = datos.tickets_pendientes_count > 0 ? '' : 'none';
+                    }
+                    if (badgeRespuesta) {
+                        badgeRespuesta.textContent = datos.tickets_respuesta_cliente_count + ' comentarios nuevos';
+                        badgeRespuesta.style.display = datos.tickets_respuesta_cliente_count > 0 ? '' : 'none';
+                    }
+
+                    var mapaEstadisticas = {
+                        'stat-total': 'total',
+                        'stat-nuevos': 'nuevos',
+                        'stat-en-proceso': 'en_proceso',
+                        'stat-respuesta-cliente': 'respuesta_cliente'
+                    };
+                    Object.keys(mapaEstadisticas).forEach(function (idElemento) {
+                        var elemento = document.getElementById(idElemento);
+                        if (elemento && datos.estadisticas) {
+                            elemento.textContent = datos.estadisticas[mapaEstadisticas[idElemento]];
+                        }
+                    });
+                })
+                .catch(function () { });
+        }
+        setInterval(actualizarNotificaciones, 25000);
+    })();
+</script>
+{% endif %}
