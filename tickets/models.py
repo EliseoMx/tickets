@@ -111,6 +111,10 @@ class Ticket(models.Model):
         upload_to='cierres/', null=True, blank=True, storage=RawMediaCloudinaryStorage()
     )
     requiere_atencion = models.BooleanField(default=False)
+    requiere_atencion_cliente = models.BooleanField(
+        default=False,
+        help_text='True cuando soporte agregó una actualización que el cliente todavía no ha visto'
+    )
 
     class Meta:
         ordering = ['-fecha_creacion']

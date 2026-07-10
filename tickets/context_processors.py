@@ -3,7 +3,7 @@ from functools import lru_cache
 
 from django.conf import settings
 
-from .views import puede_crear_usuarios, puede_atender_tickets, contar_notificaciones
+from .views import puede_crear_usuarios, puede_atender_tickets, contar_notificaciones, contar_notificaciones_cliente
 
 
 @lru_cache(maxsize=1)
@@ -40,4 +40,5 @@ def permisos(request):
         'puede_atender_tickets': puede_atender_tickets(request.user),
         'tickets_pendientes_count': pendientes,
         'tickets_respuesta_cliente_count': respuesta_cliente,
+        'tickets_cliente_notificacion_count': contar_notificaciones_cliente(request.user),
     }

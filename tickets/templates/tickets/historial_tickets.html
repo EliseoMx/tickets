@@ -231,6 +231,11 @@
     <div class="contenedor">
         <h2>Historial de tickets</h2>
 
+        <div id="banner-actualizaciones" onclick="location.reload()"
+            style="display:none; background:#eaf2f8; border:1px solid #cfe2f3; color:#2980b9; padding:10px 15px; border-radius:6px; margin-bottom:15px; cursor:pointer;">
+            🔔 Hay actualizaciones nuevas — haz clic para actualizar
+        </div>
+
         <div class="exportar-botones">
             <button type="button" class="boton-exportar" onclick="exportarTabla('csv')">⬇ Exportar CSV</button>
             <button type="button" class="boton-exportar" onclick="exportarTabla('excel')">⬇ Exportar Excel</button>
@@ -627,6 +632,7 @@
         })();
     </script>
     {% include 'tickets/_prevenir_doble_envio.html' %}
+    {% include 'tickets/_polling_notificaciones.html' %}
 </body>
 
 </html>
