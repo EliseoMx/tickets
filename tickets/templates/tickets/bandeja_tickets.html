@@ -109,7 +109,7 @@
                 {% for ticket in tickets %}
                 <tr class="{% if ticket.requiere_atencion %}fila-destacada{% endif %}">
                     <td>{{ ticket.id }}</td>
-                    <td>{{ ticket.empresa.nombre }}</td>
+                    <td>{{ ticket.nombre_empresa }}</td>
                     <td><span class="etiqueta tipo-{{ ticket.tipo }}">{{ ticket.get_tipo_display }}</span></td>
                     <td>
                         {{ ticket.titulo }}

@@ -105,6 +105,13 @@
             font-size: 22px;
             font-weight: bold;
             color: #2980b9;
+            overflow: hidden;
+        }
+
+        .logo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .grid-acciones {
@@ -195,7 +202,13 @@
     </header>
     <div class="contenedor">
         <div class="titulo-empresa">
-            <div class="logo-placeholder">{{ empresa.nombre|slice:":2"|upper }}</div>
+            <div class="logo-placeholder">
+                {% if empresa.logo %}
+                <img src="{{ empresa.logo.url }}" alt="{{ empresa.nombre }}">
+                {% else %}
+                {{ empresa.nombre|slice:":2"|upper }}
+                {% endif %}
+            </div>
             <h2>{{ empresa.nombre }}</h2>
             {% if messages %}
             {% for message in messages %}

@@ -316,7 +316,7 @@
                 {% for ticket in tickets %}
                 <tr>
                     <td>{{ ticket.id }}</td>
-                    <td><span class="etiqueta-empresa">{{ ticket.empresa.nombre }}</span></td>
+                    <td><span class="etiqueta-empresa">{{ ticket.nombre_empresa }}</span></td>
                     <td><span class="etiqueta tipo-{{ ticket.tipo }}">{{ ticket.get_tipo_display }}</span></td>
                     <td>{{ ticket.titulo }}</td>
                     {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}

@@ -478,7 +478,7 @@ def crear_empresa(request):
         return redirect('inicio')
 
     if request.method == 'POST':
-        form = EmpresaForm(request.POST)
+        form = EmpresaForm(request.POST, request.FILES)
         if form.is_valid():
             empresa = form.save()
             for administrador in Usuario.objects.filter(is_superuser=True):
@@ -534,6 +534,8 @@ def puede_ver_tickets_de_empresa(user, empresa):
     (agente cliente o soporte) y no solo pertenecer a la empresa como cliente."""
     if user.is_superuser:
         return True
+    if empresa is None:
+        return False
     if user.rol not in [Usuario.Rol.AGENTE, Usuario.Rol.SOPORTE]:
         return False
     return user.empresas.filter(id=empresa.id).exists()
@@ -881,6 +883,62 @@ def eliminar_empresa(request, empresa_id):
         empresa.save()
 
         messages.success(request, f'Empresa "{nombre_original}" eliminada. El historial de tickets se conserva.')
+
+    return redirect('lista_empresas')
+
+
+@login_required
+def editar_empresa(request, empresa_id):
+    if not puede_gestionar_empresas(request.user):
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('inicio')
+
+    empresa = get_object_or_404(Empresa, id=empresa_id)
+
+    if request.method == 'POST':
+        ruta_logo_anterior = empresa.logo.name if empresa.logo else None
+        form = EmpresaForm(request.POST, request.FILES, instance=empresa)
+        if form.is_valid():
+            empresa_actualizada = form.save()
+            ruta_logo_nueva = empresa_actualizada.logo.name if empresa_actualizada.logo else None
+            if ruta_logo_anterior and ruta_logo_anterior != ruta_logo_nueva:
+                empresa_actualizada.logo.storage.delete(ruta_logo_anterior)
+            messages.success(request, f'Empresa "{empresa_actualizada.nombre}" actualizada correctamente.')
+            return redirect('lista_empresas')
+    else:
+        form = EmpresaForm(instance=empresa)
+
+    return render(request, 'tickets/editar_empresa.html', {'form': form, 'empresa': empresa})
+
+
+@login_required
+def eliminar_empresa_permanente(request, empresa_id):
+    if not puede_gestionar_empresas(request.user):
+        messages.error(request, 'No tienes permiso para realizar esta acción.')
+        return redirect('inicio')
+
+    empresa = get_object_or_404(Empresa, id=empresa_id)
+
+    if request.method == 'POST':
+        tickets_empresa = Ticket.objects.filter(empresa=empresa)
+
+        for ticket in tickets_empresa.exclude(estado=Ticket.Estado.CERRADO):
+            try:
+                cerrar_ticket_definitivo(ticket, motivo=Ticket.MotivoCierre.ELIMINACION_EMPRESA)
+            except Exception:
+                pass
+
+        tickets_empresa.update(empresa_eliminada_nombre=empresa.nombre)
+
+        if empresa.logo:
+            empresa.logo.delete(save=False)
+
+        nombre_empresa = empresa.nombre
+        empresa.delete()
+        messages.success(
+            request,
+            f'Empresa "{nombre_empresa}" eliminada permanentemente. Sus tickets se conservaron.'
+        )
 
     return redirect('lista_empresas')
 

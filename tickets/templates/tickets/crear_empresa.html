@@ -161,12 +161,14 @@
         <div class="mensaje {{ message.tags }}">{{ message }}</div>
         {% endfor %}
         {% endif %}
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {% for field in form %}
             <label for="{{ field.id_for_label }}">{{ field.label }}</label>
             {{ field }}
+            {% if field.errors %}<p style="color:#c0392b; font-size:13px;">{{ field.errors.0 }}</p>{% endif %}
             {% endfor %}
+            <p style="font-size:13px; color:#555; margin-top:5px;">El logo es opcional; se guarda en el propio servidor.</p>
             <button type="submit" class="boton">Crear empresa</button>
         </form>
         <a href="{% url 'lista_empresas' %}" class="volver">← Volver a empresas</a>
