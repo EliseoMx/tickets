@@ -1,12 +1,15 @@
-{% if puede_atender_tickets %}
 <script>
     (function () {
+        var totalAnterior = null;
+
         function actualizarNotificaciones() {
             fetch('{% url "notificaciones_estado" %}')
                 .then(function (respuesta) { return respuesta.json(); })
                 .then(function (datos) {
                     var badgePendientes = document.getElementById('badge-pendientes');
                     var badgeRespuesta = document.getElementById('badge-respuesta-cliente');
+                    var badgeCliente = document.getElementById('badge-mis-tickets');
+
                     if (badgePendientes) {
                         badgePendientes.textContent = datos.tickets_pendientes_count;
                         badgePendientes.style.display = datos.tickets_pendientes_count > 0 ? '' : 'none';
@@ -14,6 +17,10 @@
                     if (badgeRespuesta) {
                         badgeRespuesta.textContent = datos.tickets_respuesta_cliente_count + ' comentarios nuevos';
                         badgeRespuesta.style.display = datos.tickets_respuesta_cliente_count > 0 ? '' : 'none';
+                    }
+                    if (badgeCliente) {
+                        badgeCliente.textContent = datos.tickets_cliente_notificacion_count;
+                        badgeCliente.style.display = datos.tickets_cliente_notificacion_count > 0 ? '' : 'none';
                     }
 
                     var mapaEstadisticas = {
@@ -28,10 +35,18 @@
                             elemento.textContent = datos.estadisticas[mapaEstadisticas[idElemento]];
                         }
                     });
+
+                    var totalActual = datos.tickets_pendientes_count
+                        + datos.tickets_respuesta_cliente_count
+                        + datos.tickets_cliente_notificacion_count;
+                    var banner = document.getElementById('banner-actualizaciones');
+                    if (banner && totalAnterior !== null && totalActual > totalAnterior) {
+                        banner.style.display = 'block';
+                    }
+                    totalAnterior = totalActual;
                 })
                 .catch(function () { });
         }
         setInterval(actualizarNotificaciones, 25000);
     })();
 </script>
-{% endif %}

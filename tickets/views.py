@@ -94,12 +94,19 @@ def contar_notificaciones(user):
     return base.count(), base.filter(requiere_atencion=True).count()
 
 
+def contar_notificaciones_cliente(user):
+    if not user.is_authenticated:
+        return 0
+    return Ticket.objects.filter(cliente=user, requiere_atencion_cliente=True).count()
+
+
 @login_required
 def notificaciones_estado(request):
     pendientes, respuesta_cliente = contar_notificaciones(request.user)
     return JsonResponse({
         'tickets_pendientes_count': pendientes,
         'tickets_respuesta_cliente_count': respuesta_cliente,
+        'tickets_cliente_notificacion_count': contar_notificaciones_cliente(request.user),
         'estadisticas': calcular_estadisticas(request.user) or {},
     })
 
@@ -710,6 +717,7 @@ def atender_ticket(request, ticket_id):
                 TicketImagen.objects.create(actualizacion=actualizacion, imagen=imagen, nombre_original=imagen.name)
 
             ticket.requiere_atencion = False
+            ticket.requiere_atencion_cliente = True
 
             if actualizacion.estado_en_ese_momento == Ticket.Estado.CERRADO:
                 ticket.estado = Ticket.Estado.PENDIENTE_CONFIRMACION
@@ -916,6 +924,10 @@ def ver_ticket_cliente(request, ticket_id):
     if not es_dueno and not puede_ver_tickets_de_empresa(request.user, ticket.empresa):
         messages.error(request, 'No tienes acceso a este ticket.')
         return redirect('inicio')
+
+    if es_dueno and ticket.requiere_atencion_cliente:
+        ticket.requiere_atencion_cliente = False
+        ticket.save(update_fields=['requiere_atencion_cliente'])
 
     if request.method == 'POST' and es_dueno and ticket.estado != Ticket.Estado.CERRADO:
         form = ComentarioClienteForm(request.POST)

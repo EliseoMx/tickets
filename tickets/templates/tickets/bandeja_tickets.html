@@ -54,6 +54,11 @@
     <div class="contenedor">
         <h2>Bandeja de tickets</h2>
 
+        <div id="banner-actualizaciones" onclick="location.reload()"
+            style="display:none; background:#eaf2f8; border:1px solid #cfe2f3; color:#2980b9; padding:10px 15px; border-radius:6px; margin-bottom:15px; cursor:pointer;">
+            🔔 Hay actualizaciones nuevas — haz clic para actualizar
+        </div>
+
         <div class="tabs">
             <a href="{% url 'bandeja_tickets' %}?filtro=pendientes" class="tab {% if filtro == 'pendientes' %}tab-activa{% endif %}">Pendientes</a>
             <a href="{% url 'bandeja_tickets' %}?filtro=cerrados" class="tab {% if filtro == 'cerrados' %}tab-activa{% endif %}">Cerrados</a>

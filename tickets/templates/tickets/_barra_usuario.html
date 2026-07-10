@@ -6,6 +6,11 @@
         <span id="badge-pendientes" class="badge" style="{% if tickets_pendientes_count == 0 %}display:none;{% endif %}">{{ tickets_pendientes_count }}</span>
         <span id="badge-respuesta-cliente" class="badge badge-cliente" style="{% if tickets_respuesta_cliente_count == 0 %}display:none;{% endif %}">{{ tickets_respuesta_cliente_count }} comentarios nuevos</span>
     </a>
+    {% else %}
+    <a href="{% url 'historial_general' %}" class="boton-secundario boton-notificacion">
+        Mis tickets
+        <span id="badge-mis-tickets" class="badge" style="{% if tickets_cliente_notificacion_count == 0 %}display:none;{% endif %}">{{ tickets_cliente_notificacion_count }}</span>
+    </a>
     {% endif %}
     Hola, {{ user.username }}
     ({% if user.is_superuser %}Administrador{% else %}{{ user.get_rol_display }}{% endif %}) —
