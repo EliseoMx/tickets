@@ -306,20 +306,20 @@ def lista_usuarios(request):
         ).distinct().prefetch_related('empresas').order_by('username')
         empresas_disponibles = empresas_propias.filter(activa=True).order_by('nombre')
 
-    rol_filtro = request.GET.get('rol', '')
-    if request.user.is_superuser and rol_filtro in Usuario.Rol.values:
-        usuarios = usuarios.filter(rol=rol_filtro)
+    roles_filtro = [valor for valor in request.GET.getlist('rol') if valor in Usuario.Rol.values]
+    if request.user.is_superuser and roles_filtro:
+        usuarios = usuarios.filter(rol__in=roles_filtro)
 
-    empresa_filtro_id = request.GET.get('empresa', '')
-    if empresa_filtro_id:
-        usuarios = usuarios.filter(empresas__id=empresa_filtro_id).distinct()
+    empresas_filtro_ids = [valor for valor in request.GET.getlist('empresa') if valor]
+    if empresas_filtro_ids:
+        usuarios = usuarios.filter(empresas__id__in=empresas_filtro_ids).distinct()
 
     return render(request, 'tickets/lista_usuarios.html', {
         'usuarios': usuarios,
         'empresas_disponibles': empresas_disponibles,
         'roles_disponibles': Usuario.Rol.choices,
-        'rol_filtro': rol_filtro,
-        'empresa_filtro_id': empresa_filtro_id,
+        'roles_filtro': roles_filtro,
+        'empresas_filtro_ids': empresas_filtro_ids,
     })
 
 
@@ -616,21 +616,21 @@ def historial_tickets(request, empresa_id=None):
             id__in=tickets.values_list('cliente_id', flat=True)
         ).distinct().order_by('username')
 
-    estado_filtro = request.GET.get('estado', '')
-    if estado_filtro in Ticket.Estado.values:
-        tickets = tickets.filter(estado=estado_filtro)
+    estados_filtro = [valor for valor in request.GET.getlist('estado') if valor in Ticket.Estado.values]
+    if estados_filtro:
+        tickets = tickets.filter(estado__in=estados_filtro)
 
-    tipo_filtro = request.GET.get('tipo', '')
-    if tipo_filtro in Ticket.Tipo.values:
-        tickets = tickets.filter(tipo=tipo_filtro)
+    tipos_filtro = [valor for valor in request.GET.getlist('tipo') if valor in Ticket.Tipo.values]
+    if tipos_filtro:
+        tickets = tickets.filter(tipo__in=tipos_filtro)
 
-    empresa_filtro_id = request.GET.get('empresa', '')
-    if empresas_disponibles is not None and empresa_filtro_id:
-        tickets = tickets.filter(empresa_id=empresa_filtro_id)
+    empresas_filtro_ids = [valor for valor in request.GET.getlist('empresa') if valor]
+    if empresas_disponibles is not None and empresas_filtro_ids:
+        tickets = tickets.filter(empresa_id__in=empresas_filtro_ids)
 
-    cliente_filtro_id = request.GET.get('cliente', '')
-    if clientes_disponibles is not None and cliente_filtro_id:
-        tickets = tickets.filter(cliente_id=cliente_filtro_id)
+    clientes_filtro_ids = [valor for valor in request.GET.getlist('cliente') if valor]
+    if clientes_disponibles is not None and clientes_filtro_ids:
+        tickets = tickets.filter(cliente_id__in=clientes_filtro_ids)
 
     return render(request, 'tickets/historial_tickets.html', {
         'tickets': tickets,
@@ -639,10 +639,10 @@ def historial_tickets(request, empresa_id=None):
         'clientes_disponibles': clientes_disponibles,
         'estados_disponibles': Ticket.Estado.choices,
         'tipos_disponibles': Ticket.Tipo.choices,
-        'estado_filtro': estado_filtro,
-        'tipo_filtro': tipo_filtro,
-        'empresa_filtro_id': empresa_filtro_id,
-        'cliente_filtro_id': cliente_filtro_id,
+        'estados_filtro': estados_filtro,
+        'tipos_filtro': tipos_filtro,
+        'empresas_filtro_ids': empresas_filtro_ids,
+        'clientes_filtro_ids': clientes_filtro_ids,
     })
 
 @login_required
