@@ -186,6 +186,81 @@
             font-size: 12px;
         }
 
+        .filtro-multi {
+            position: relative;
+            width: 100%;
+        }
+
+        .filtro-multi-boton {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 22px 6px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+            background-color: white;
+            text-align: left;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            position: relative;
+        }
+
+        .filtro-multi-boton::after {
+            content: "\25BC";
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .filtro-multi.abierto .filtro-multi-boton::after {
+            content: "\25B2";
+        }
+
+        .filtro-multi-panel {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 30;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+            max-height: 220px;
+            overflow-y: auto;
+            min-width: 170px;
+            padding: 4px 0;
+        }
+
+        .filtro-multi.abierto .filtro-multi-panel {
+            display: block;
+        }
+
+        .filtro-multi-panel label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            font-weight: normal;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .filtro-multi-panel label:hover {
+            background-color: #f0f2f5;
+        }
+
+        .filtro-multi-panel input[type="checkbox"] {
+            margin: 0;
+        }
+
         .fila-busqueda td {
             background-color: #fafbfc;
             padding: 6px 8px 14px 8px;
@@ -257,51 +332,95 @@
                     <th>Acción</th>
                 </tr>
                 <tr class="fila-filtros">
-                    <td><select class="filtro-columna" data-col="0"><option value="">Todos</option></select></td>
+                    <td>
+                        <div class="filtro-multi filtro-multi-cliente" data-col="0">
+                            <button type="button" class="filtro-multi-boton">Todos</button>
+                            <div class="filtro-multi-panel"></div>
+                        </div>
+                    </td>
                     <td>
                         {% if empresas_disponibles %}
-                        <select name="empresa" onchange="this.form.submit()">
-                            <option value="">Todas</option>
-                            {% for empresa in empresas_disponibles %}
-                            <option value="{{ empresa.id }}" {% if empresa_filtro_id == empresa.id|stringformat:"s" %}selected{% endif %}>{{ empresa.nombre }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="filtro-multi">
+                            <button type="button" class="filtro-multi-boton">Todas</button>
+                            <div class="filtro-multi-panel">
+                                {% for empresa in empresas_disponibles %}
+                                <label>
+                                    <input type="checkbox" name="empresa" value="{{ empresa.id }}"
+                                        {% if empresa.id|stringformat:"s" in empresas_filtro_ids %}checked{% endif %}
+                                        onchange="this.form.submit()">
+                                    {{ empresa.nombre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
                         {% endif %}
                     </td>
                     <td>
-                        <select name="tipo" onchange="this.form.submit()">
-                            <option value="">Todos</option>
-                            {% for valor, etiqueta in tipos_disponibles %}
-                            <option value="{{ valor }}" {% if valor == tipo_filtro %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="filtro-multi">
+                            <button type="button" class="filtro-multi-boton">Todos</button>
+                            <div class="filtro-multi-panel">
+                                {% for valor, etiqueta in tipos_disponibles %}
+                                <label>
+                                    <input type="checkbox" name="tipo" value="{{ valor }}"
+                                        {% if valor in tipos_filtro %}checked{% endif %}
+                                        onchange="this.form.submit()">
+                                    {{ etiqueta }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </td>
-                    <td><select class="filtro-columna" data-col="3"><option value="">Todos</option></select></td>
+                    <td>
+                        <div class="filtro-multi filtro-multi-cliente" data-col="3">
+                            <button type="button" class="filtro-multi-boton">Todos</button>
+                            <div class="filtro-multi-panel"></div>
+                        </div>
+                    </td>
                     {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}
                     <td>
                         {% if clientes_disponibles %}
-                        <select name="cliente" onchange="this.form.submit()">
-                            <option value="">Todos</option>
-                            {% for cliente in clientes_disponibles %}
-                            <option value="{{ cliente.id }}" {% if cliente_filtro_id == cliente.id|stringformat:"s" %}selected{% endif %}>{{ cliente.username }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="filtro-multi">
+                            <button type="button" class="filtro-multi-boton">Todos</button>
+                            <div class="filtro-multi-panel">
+                                {% for cliente in clientes_disponibles %}
+                                <label>
+                                    <input type="checkbox" name="cliente" value="{{ cliente.id }}"
+                                        {% if cliente.id|stringformat:"s" in clientes_filtro_ids %}checked{% endif %}
+                                        onchange="this.form.submit()">
+                                    {{ cliente.username }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
                         {% endif %}
                     </td>
                     {% endif %}
                     <td>
-                        <select name="estado" onchange="this.form.submit()">
-                            <option value="">Todos</option>
-                            {% for valor, etiqueta in estados_disponibles %}
-                            <option value="{{ valor }}" {% if valor == estado_filtro %}selected{% endif %}>{{ etiqueta }}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="filtro-multi">
+                            <button type="button" class="filtro-multi-boton">Todos</button>
+                            <div class="filtro-multi-panel">
+                                {% for valor, etiqueta in estados_disponibles %}
+                                <label>
+                                    <input type="checkbox" name="estado" value="{{ valor }}"
+                                        {% if valor in estados_filtro %}checked{% endif %}
+                                        onchange="this.form.submit()">
+                                    {{ etiqueta }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </td>
                     <td>
                         {% if request.user.is_superuser or request.user.rol == 'agente' or request.user.rol == 'soporte' %}
-                        <select class="filtro-columna filtro-fecha" data-col="6"><option value="">Todos</option></select>
+                        <div class="filtro-multi filtro-multi-cliente filtro-fecha" data-col="6">
+                            <button type="button" class="filtro-multi-boton">Todos</button>
+                            <div class="filtro-multi-panel"></div>
+                        </div>
                         {% else %}
-                        <select class="filtro-columna filtro-fecha" data-col="5"><option value="">Todos</option></select>
+                        <div class="filtro-multi filtro-multi-cliente filtro-fecha" data-col="5">
+                            <button type="button" class="filtro-multi-boton">Todos</button>
+                            <div class="filtro-multi-panel"></div>
+                        </div>
                         {% endif %}
                     </td>
                     <td></td>
@@ -349,33 +468,50 @@
     </div>
 
     <script>
-        const filtrosColumna = document.querySelectorAll('.filtro-columna');
+        const todosFiltrosMulti = document.querySelectorAll('.filtro-multi');
+        const filtrosMultiCliente = document.querySelectorAll('.filtro-multi-cliente');
         const buscadorGeneral = document.getElementById('buscador');
 
-        function valorCelda(control, celda) {
+        function valorCelda(filtro, celda) {
             const texto = celda.textContent.trim();
-            return control.classList.contains('filtro-fecha') ? texto.split(' ')[0] : texto;
+            return filtro.classList.contains('filtro-fecha') ? texto.split(' ')[0] : texto;
         }
 
-        function poblarSelectsColumna() {
-            filtrosColumna.forEach(function (control) {
-                if (control.tagName !== 'SELECT' || control.options.length > 1) return;
-                const col = parseInt(control.dataset.col, 10);
+        function actualizarBotonFiltro(filtro) {
+            const boton = filtro.querySelector('.filtro-multi-boton');
+            const marcados = filtro.querySelectorAll('input[type="checkbox"]:checked');
+            if (marcados.length === 0) {
+                boton.textContent = 'Todos';
+            } else if (marcados.length === 1) {
+                boton.textContent = marcados[0].parentElement.textContent.trim();
+            } else {
+                boton.textContent = marcados.length + ' seleccionados';
+            }
+        }
+
+        function poblarFiltrosMultiCliente() {
+            filtrosMultiCliente.forEach(function (filtro) {
+                const panel = filtro.querySelector('.filtro-multi-panel');
+                if (panel.children.length > 0) return;
+                const col = parseInt(filtro.dataset.col, 10);
                 const valores = new Set();
                 document.querySelectorAll('tbody tr').forEach(function (fila) {
                     const celdas = fila.querySelectorAll('td');
                     if (celdas[col]) {
-                        const texto = valorCelda(control, celdas[col]);
+                        const texto = valorCelda(filtro, celdas[col]);
                         if (texto) valores.add(texto);
                     }
                 });
                 Array.from(valores)
                     .sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); })
                     .forEach(function (valor) {
-                        const option = document.createElement('option');
-                        option.value = valor;
-                        option.textContent = valor;
-                        control.appendChild(option);
+                        const label = document.createElement('label');
+                        const input = document.createElement('input');
+                        input.type = 'checkbox';
+                        input.value = valor;
+                        label.appendChild(input);
+                        label.appendChild(document.createTextNode(valor));
+                        panel.appendChild(label);
                     });
             });
         }
@@ -387,10 +523,13 @@
                 const celdas = fila.querySelectorAll('td');
                 let visible = true;
 
-                filtrosColumna.forEach(function (control) {
-                    const valor = control.value.toLowerCase();
-                    const col = parseInt(control.dataset.col, 10);
-                    if (valor && celdas[col] && valorCelda(control, celdas[col]).toLowerCase() !== valor) {
+                filtrosMultiCliente.forEach(function (filtro) {
+                    const col = parseInt(filtro.dataset.col, 10);
+                    const seleccionados = Array.from(filtro.querySelectorAll('input[type="checkbox"]:checked'))
+                        .map(function (i) { return i.value.toLowerCase(); });
+                    if (seleccionados.length === 0) return;
+                    const texto = celdas[col] ? valorCelda(filtro, celdas[col]).toLowerCase() : '';
+                    if (!seleccionados.includes(texto)) {
                         visible = false;
                     }
                 });
@@ -403,10 +542,30 @@
             });
         }
 
-        poblarSelectsColumna();
-        filtrosColumna.forEach(function (control) {
-            control.addEventListener('input', aplicarFiltros);
-            control.addEventListener('change', aplicarFiltros);
+        poblarFiltrosMultiCliente();
+        todosFiltrosMulti.forEach(actualizarBotonFiltro);
+
+        todosFiltrosMulti.forEach(function (filtro) {
+            const boton = filtro.querySelector('.filtro-multi-boton');
+            boton.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const estaAbierto = filtro.classList.contains('abierto');
+                todosFiltrosMulti.forEach(function (f) { f.classList.remove('abierto'); });
+                if (!estaAbierto) filtro.classList.add('abierto');
+            });
+            filtro.querySelector('.filtro-multi-panel').addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+            filtro.addEventListener('change', function () {
+                actualizarBotonFiltro(filtro);
+            });
+        });
+        document.addEventListener('click', function () {
+            todosFiltrosMulti.forEach(function (f) { f.classList.remove('abierto'); });
+        });
+
+        filtrosMultiCliente.forEach(function (filtro) {
+            filtro.addEventListener('change', aplicarFiltros);
         });
         buscadorGeneral.addEventListener('input', aplicarFiltros);
 
