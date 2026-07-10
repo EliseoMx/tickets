@@ -217,3 +217,76 @@ python manage.py migrate
 ```
 (los últimos dos pasos no siempre son necesarios, pero no está de más correrlos por si hay dependencias o
 cambios de base de datos nuevos).
+
+## Despliegue en Windows con IIS
+
+Todo lo de esta sección es para cuando el sistema vaya a instalarse en un servidor Windows real, accesible
+para otras personas (no aplica a tu ambiente de desarrollo local, que sigue funcionando con `runserver`
+exactamente igual que antes).
+
+### 1. Servidor WSGI: Waitress
+
+`runserver` es solo para desarrollo. En Windows, el equivalente de producción a Gunicorn (que no funciona
+en Windows) es **Waitress**, ya incluido en `requirements.txt`. Se levanta así:
+```
+waitress-serve --host=127.0.0.1 --port=8000 config.wsgi:application
+```
+Esto deja el sistema escuchando solo en `127.0.0.1:8000` (no expuesto directo a internet — ese es trabajo
+de IIS, ver el punto 4).
+
+Para que seguir corriendo después de reiniciar el servidor (sin depender de una terminal abierta), regístralo
+como servicio de Windows con **[NSSM](https://nssm.cc/)**:
+```
+nssm install SistemaTickets "C:\ruta\al\proyecto\venv\Scripts\waitress-serve.exe" --host=127.0.0.1 --port=8000 config.wsgi:application
+nssm start SistemaTickets
+```
+
+### 2. Archivos estáticos
+
+Antes de arrancar en producción, junta los archivos estáticos (CSS/JS) en una sola carpeta para que IIS los
+sirva directamente:
+```
+python manage.py collectstatic
+```
+Esto los copia a la carpeta `staticfiles/` (ya excluida de git). En IIS, configura esa carpeta como un
+directorio virtual apuntando a `static/` para que se sirvan sin pasar por Django/Waitress.
+
+### 3. Variables de entorno del servidor
+
+En el `.env` **del servidor** (no el de tu compu):
+```
+DEBUG=False
+ALLOWED_HOSTS=tu-dominio-o-ip-real
+SECRET_KEY=<genera una nueva, ver sección de Configuración de arriba>
+```
+
+### 4. IIS como proxy inverso
+
+1. Activa **IIS** en el servidor ("Activar o desactivar las características de Windows" → Internet
+   Information Services).
+2. Instala los módulos gratuitos de Microsoft **[URL Rewrite](https://www.iis.net/downloads/microsoft/url-rewrite)**
+   y **[Application Request Routing (ARR)](https://www.iis.net/downloads/microsoft/application-request-routing)**.
+3. Crea un sitio en IIS Manager apuntando a una carpeta cualquiera (puede ser vacía), y copia ahí el archivo
+   de ejemplo [`deploy/iis/web.config`](deploy/iis/web.config) — define la regla que reenvía todo el tráfico
+   que llega a IIS hacia `http://127.0.0.1:8000` (donde corre Waitress).
+4. En el firewall de Windows, **bloquea el puerto 8000 hacia afuera** — solo IIS (puertos 80/443) debe
+   quedar expuesto a internet; Waitress solo debe ser alcanzable desde el propio servidor.
+5. Para HTTPS, instala un certificado en IIS — gratis con Let's Encrypt usando
+   **[win-acme](https://www.win-acme.com/)**.
+
+### 5. Base de datos (opcional): pasar de SQLite a PostgreSQL
+
+Si vas a tener varios agentes/clientes usando el sistema al mismo tiempo, conviene cambiar de SQLite a
+PostgreSQL (ver también la explicación general en la conversación de configuración). En el `.env` del
+servidor:
+```
+DB_ENGINE=postgresql
+DB_NAME=tickets_db
+DB_USER=tickets_app
+DB_PASSWORD=<contraseña fuerte>
+DB_HOST=localhost
+DB_PORT=5432
+```
+Si `DB_ENGINE` no se define (o no es `postgresql`), el sistema sigue usando SQLite automáticamente — no es
+obligatorio cambiarlo. El servidor de PostgreSQL debe quedar configurado para escuchar solo en `localhost`
+(nunca expuesto directo a internet), igual que Waitress.
