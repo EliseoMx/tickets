@@ -219,6 +219,39 @@
             width: fit-content;
         }
 
+        .boton-eliminar-permanente {
+            background-color: #7b241c;
+            border: none;
+            color: white;
+            padding: 7px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            width: fit-content;
+        }
+
+        .boton-editar {
+            background-color: #2980b9;
+            color: white;
+            padding: 7px 14px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 13px;
+            width: fit-content;
+            display: inline-block;
+        }
+
+        .acciones-empresa {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            align-items: flex-start;
+        }
+
+        .acciones-empresa form {
+            margin: 0;
+        }
+
         .sin-acciones {
             color: #999;
             font-size: 12px;
@@ -380,24 +413,33 @@
                     <td>{{ empresa.usuarios.count }}</td>
                     <td>{{ empresa.tickets.count }}</td>
                     <td>
-                        {% if not empresa.eliminada %}
-                        <form method="post" action="{% url 'alternar_empresa_activa' empresa.id %}"
-                            style="display:inline;">
-                            {% csrf_token %}
+                        <div class="acciones-empresa">
+                            {% if not empresa.eliminada %}
+                            <a href="{% url 'editar_empresa' empresa.id %}" class="boton-pequeno boton-editar"
+                                style="text-decoration:none;">Editar</a>
+                            <form method="post" action="{% url 'alternar_empresa_activa' empresa.id %}">
+                                {% csrf_token %}
+                                {% if empresa.activa %}
+                                <button type="submit" class="boton-pequeno boton-secundario-pequeno">Desactivar</button>
+                                {% else %}
+                                <button type="submit" class="boton-pequeno">Activar</button>
+                                {% endif %}
+                            </form>
                             {% if empresa.activa %}
-                            <button type="submit" class="boton-pequeno boton-secundario-pequeno">Desactivar</button>
-                            {% else %}
-                            <button type="submit" class="boton-pequeno">Activar</button>
+                            <form method="post" action="{% url 'eliminar_empresa' empresa.id %}"
+                                onsubmit="return confirm('¿Eliminar esta empresa?');">
+                                {% csrf_token %}
+                                <button type="submit" class="boton-pequeno boton-eliminar">Eliminar</button>
+                            </form>
                             {% endif %}
-                        </form>
-                        <form method="post" action="{% url 'eliminar_empresa' empresa.id %}" style="display:inline;"
-                            onsubmit="return confirm('¿Eliminar esta empresa?');">
-                            {% csrf_token %}
-                            <button type="submit" class="boton-pequeno boton-eliminar">Eliminar</button>
-                        </form>
-                        {% else %}
-                        <span style="color:#999; font-size:12px;">Sin acciones disponibles</span>
-                        {% endif %}
+                            {% else %}
+                            <form method="post" action="{% url 'eliminar_empresa_permanente' empresa.id %}"
+                                onsubmit="return confirm('¿ELIMINAR PERMANENTEMENTE la empresa \'{{ empresa.nombre }}\'? Esta acción no se puede deshacer. Sus tickets abiertos se cerrarán y se conservarán, pero la empresa desaparecerá para siempre.');">
+                                {% csrf_token %}
+                                <button type="submit" class="boton-pequeno boton-eliminar-permanente">Eliminar permanente</button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}

@@ -118,6 +118,13 @@
             font-size: 28px;
             font-weight: bold;
             color: #2980b9;
+            overflow: hidden;
+        }
+
+        .logo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .tarjeta-empresa h3 {
@@ -288,7 +295,13 @@
         <div class="grid-empresas">
             {% for empresa in empresas_usuario %}
             <a href="{% url 'portal_empresa' empresa.id %}" class="tarjeta-empresa">
-                <div class="logo-placeholder">{{ empresa.nombre|slice:":2"|upper }}</div>
+                <div class="logo-placeholder">
+                    {% if empresa.logo %}
+                    <img src="{{ empresa.logo.url }}" alt="{{ empresa.nombre }}">
+                    {% else %}
+                    {{ empresa.nombre|slice:":2"|upper }}
+                    {% endif %}
+                </div>
                 <h3>{{ empresa.nombre }}</h3>
             </a>
             {% empty %}

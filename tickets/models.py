@@ -1,6 +1,7 @@
 import os
 
 from django.contrib.auth.models import AbstractUser
+from django.core.files.storage import FileSystemStorage
 from django.db import models
 from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
@@ -18,6 +19,10 @@ def ruta_adjunto_ticket(instance, filename):
 class Empresa(models.Model):
     nombre = models.CharField(max_length=150, unique=True)
     descripcion = models.CharField(max_length=255, blank=True)
+    logo = models.ImageField(
+        upload_to='empresas/', null=True, blank=True, storage=FileSystemStorage(),
+        help_text='Se guarda en el propio servidor (no en Cloudinary), ya que son pocas imágenes y ligeras'
+    )
     activa = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     eliminada = models.BooleanField(default=False)
@@ -67,13 +72,20 @@ class Ticket(models.Model):
         CLIENTE = 'cliente', 'Confirmado por el cliente'
         AUTOMATICO = 'automatico', 'Cierre automático (sin respuesta)'
         ELIMINACION_USUARIO = 'eliminacion_usuario', 'Cerrado por eliminación de usuario'
+        ELIMINACION_EMPRESA = 'eliminacion_empresa', 'Cerrado por eliminación de empresa'
 
     class MedioContacto(models.TextChoices):
         TELEFONO = 'telefono', 'Teléfono'
         CORREO = 'correo', 'Correo electrónico'
         WHATSAPP = 'whatsapp', 'WhatsApp'
 
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='tickets')
+    empresa = models.ForeignKey(
+        Empresa, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets'
+    )
+    empresa_eliminada_nombre = models.CharField(
+        max_length=150, blank=True,
+        help_text='Nombre de la empresa guardado si fue eliminada permanentemente'
+    )
     cliente = models.ForeignKey(
         Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets_creados'
     )
@@ -127,6 +139,12 @@ class Ticket(models.Model):
         if self.cliente:
             return self.cliente.username
         return self.cliente_eliminado_nombre or 'Usuario eliminado'
+
+    @property
+    def nombre_empresa(self):
+        if self.empresa:
+            return self.empresa.nombre
+        return self.empresa_eliminada_nombre or 'Empresa eliminada'
 
 class TicketActualizacion(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='actualizaciones')

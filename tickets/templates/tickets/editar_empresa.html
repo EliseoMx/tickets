@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Ticket creado - {{ nombre_sistema }}</title>
+    <title>Editar {{ empresa.nombre }} - {{ nombre_sistema }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -82,57 +82,75 @@
         }
 
         .contenedor {
-            max-width: 500px;
-            margin: 70px auto;
+            max-width: 450px;
+            margin: 50px auto;
             background: white;
-            padding: 40px 30px;
-            border-radius: 10px;
+            padding: 30px;
+            border-radius: 8px;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            text-align: center;
         }
 
-        .icono-exito {
-            width: 70px;
-            height: 70px;
-            background-color: #e8f8f5;
-            color: #17a589;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 34px;
-            margin: 0 auto 20px auto;
-        }
-
-        .numero-ticket {
-            font-size: 32px;
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 5px;
             font-weight: bold;
-            color: #2980b9;
-            margin: 10px 0;
+            color: #2c3e50;
         }
 
-        .detalle {
-            text-align: left;
-            background: #f9f9f9;
-            border-radius: 6px;
-            padding: 15px 20px;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #444;
+        input,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
 
-        .detalle p {
-            margin: 6px 0;
+        .logo-actual {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            margin-top: 8px;
+            border: 1px solid #ddd;
         }
 
         .boton {
-            display: inline-block;
             background-color: #2980b9;
             color: white;
-            padding: 10px 24px;
+            padding: 10px 20px;
             border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            margin-top: 20px;
+            font-size: 15px;
+        }
+
+        .volver {
+            display: inline-block;
+            margin-top: 15px;
+            color: #2980b9;
             text-decoration: none;
-            margin-top: 25px;
+        }
+
+        .mensaje {
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            transition: opacity 0.6s ease;
+        }
+
+        .mensaje.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .mensaje.error {
+            background-color: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
@@ -147,28 +165,28 @@
         {% include 'tickets/_barra_usuario.html' %}
     </header>
     <div class="contenedor">
-        <div class="icono-exito">✓</div>
-        <h2>¡Tu ticket fue creado!</h2>
-        <p>Se ha registrado correctamente tu {{ ticket.get_tipo_display|lower }}.</p>
-
-        <div class="numero-ticket">Ticket #{{ ticket.id }}</div>
-
-        <div class="detalle">
-            <p><strong>Título:</strong> {{ ticket.titulo }}</p>
-            <p><strong>Empresa:</strong> {{ ticket.nombre_empresa }}</p>
-            <p><strong>Estado:</strong> {{ ticket.get_estado_display }}</p>
-            <p><strong>Contacto preferido:</strong> {{ ticket.get_medio_contacto_display }} — {{ ticket.dato_contacto }}
-            </p>
-            {% if ticket.contacto_alternativo %}
-            <p><strong>Contacto alternativo:</strong> {{ ticket.contacto_alternativo }}</p>
-            {% endif %}
-        </div>
-
-        {% if ticket.empresa %}
-        <a href="{% url 'portal_empresa' ticket.empresa.id %}" class="boton">Volver al portal</a>
-        {% else %}
-        <a href="{% url 'inicio' %}" class="boton">Volver a inicio</a>
+        <h2>Editar {{ empresa.nombre }}</h2>
+        {% if messages %}
+        {% for message in messages %}
+        <div class="mensaje {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
         {% endif %}
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in form %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% if field.name == 'logo' and empresa.logo %}
+            <img src="{{ empresa.logo.url }}" alt="Logo actual de {{ empresa.nombre }}" class="logo-actual">
+            {% endif %}
+            {{ field }}
+            {% if field.errors %}<p style="color:#c0392b; font-size:13px;">{{ field.errors.0 }}</p>{% endif %}
+            {% endfor %}
+            <p style="font-size:13px; color:#555; margin-top:5px;">
+                Para reemplazar el logo, elige un archivo nuevo. Para quitarlo, marca "Clear" junto al archivo actual.
+            </p>
+            <button type="submit" class="boton">Guardar cambios</button>
+        </form>
+        <a href="{% url 'lista_empresas' %}" class="volver">← Volver a empresas</a>
     </div>
     <script>
         (function () {
@@ -194,6 +212,14 @@
             actualizarReloj();
             setInterval(actualizarReloj, 1000);
         })();
+    </script>
+    <script>
+        document.querySelectorAll('.mensaje').forEach(function (el) {
+            setTimeout(function () {
+                el.style.opacity = '0';
+                setTimeout(function () { el.style.display = 'none'; }, 600);
+            }, 3000);
+        });
     </script>
     {% include 'tickets/_prevenir_doble_envio.html' %}
 </body>

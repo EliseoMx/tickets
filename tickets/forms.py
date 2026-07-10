@@ -132,11 +132,12 @@ class CambiarPasswordForm(forms.Form):
 class EmpresaForm(forms.ModelForm):
     class Meta:
         model = Empresa
-        fields = ['nombre', 'descripcion']
+        fields = ['nombre', 'descripcion', 'logo']
 
     def clean_nombre(self):
         nombre = self.cleaned_data['nombre'].strip()
-        if Empresa.objects.filter(nombre__iexact=nombre).exists():
+        existe = Empresa.objects.filter(nombre__iexact=nombre).exclude(pk=self.instance.pk).exists()
+        if existe:
             raise forms.ValidationError('Ya existe una empresa registrada con este nombre.')
         return nombre
 

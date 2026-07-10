@@ -348,7 +348,7 @@
         {% endif %}
 
         <div class="detalle">
-            <p><strong>Empresa:</strong> {{ ticket.empresa.nombre }}</p>
+            <p><strong>Empresa:</strong> {{ ticket.nombre_empresa }}</p>
             <p><strong>Tipo:</strong> {{ ticket.get_tipo_display }}</p>
             <p><strong>Fecha de creación:</strong> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</p>
             {% if ticket.estado == 'cerrado' %}
@@ -452,7 +452,11 @@
         </form>
         {% endif %}
 
+        {% if ticket.empresa %}
         <a href="{% url 'historial_tickets' ticket.empresa.id %}" class="volver">← Volver a mi historial</a>
+        {% else %}
+        <a href="{% url 'historial_general' %}" class="volver">← Volver a mi historial</a>
+        {% endif %}
     </div>
 
     <div class="overlay-cierre" id="overlay-cierre">

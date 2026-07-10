@@ -297,7 +297,7 @@
         {% endif %}
 
         <div class="detalle">
-            <p><strong>Empresa:</strong> {{ ticket.empresa.nombre }}</p>
+            <p><strong>Empresa:</strong> {{ ticket.nombre_empresa }}</p>
             <p><strong>Tipo:</strong> {{ ticket.get_tipo_display }}</p>
             <p><strong>Cliente:</strong> {{ ticket.nombre_cliente }}
                 ({% if ticket.cliente %}{{ ticket.cliente.email|default:"sin correo" }}{% else %}cuenta eliminada{% endif %})
