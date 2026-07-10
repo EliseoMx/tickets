@@ -84,6 +84,10 @@ def _texto_a_parrafos(texto):
 
 def _agregar_imagenes_al_pdf(story, imagenes):
     for img in imagenes:
+        if img.es_pdf:
+            story.append(Paragraph(f'[Adjunto PDF: {img.nombre_archivo} — {img.imagen.url}]', ESTILOS['Normal']))
+            story.append(Spacer(1, 6))
+            continue
         try:
             respuesta = requests.get(img.imagen.url, timeout=15)
             respuesta.raise_for_status()
