@@ -156,8 +156,47 @@ Copia `.env.example` a un archivo nuevo llamado `.env` (en la raíz del proyecto
      (opcional pero recomendado: datos de la cuenta protegida que se crea sola; nunca subir estos valores a git)
    - `NOMBRE_SISTEMA`, `TEXTO_SELECCION_EMPRESA` (opcional, ver sección de textos configurables)
    - `PORT` (opcional; puerto donde corre `runserver`, por default 8000)
+   - `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS` (ver explicación abajo — para desarrollo local casi nunca hay que tocarlos)
 
 El archivo `.env` nunca se sube a git (ya está en `.gitignore`) — es solo para tu copia local.
+
+#### `SECRET_KEY`: ¿qué es y de dónde se saca?
+
+Es una clave que Django usa internamente para firmar cosas sensibles (sesiones de login, tokens, cookies
+firmadas, etc.). Si alguien más la conoce, podría falsificar sesiones de otros usuarios en tu sistema.
+
+- **Para desarrollo local**: puedes dejarla vacía en tu `.env` — el sistema usa automáticamente una clave de
+  respaldo (definida en `config/settings.py`) para que no tengas que preocuparte por esto mientras pruebas
+  en tu computadora.
+- **Para producción** (cuando el sistema se vaya a instalar en un servidor real, accesible por otras
+  personas): **genera una propia y única**, nunca reutilices la de desarrollo. Se genera así:
+  ```
+  python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+  ```
+  Copia el resultado y pégalo en `SECRET_KEY=` dentro del `.env` **de ese servidor** (no del repositorio).
+  Si esta clave se filtra o cambia de servidor, mejor genera una nueva.
+
+#### `DEBUG`: ¿qué es y cómo funciona?
+
+Controla si Django muestra información técnica detallada (el error completo, la línea de código, las
+variables en memoria) cuando algo falla, o si en cambio muestra una página de error genérica.
+
+- `DEBUG=True` (para desarrollo local): útil mientras programas, porque ves exactamente qué falló y dónde.
+  **Nunca debe usarse así en un servidor real** — esa información detallada también es visible para
+  cualquier visitante, y puede exponer datos sensibles del sistema.
+- `DEBUG=False` (para producción): si no se define en el `.env`, este es el valor por default — es la
+  opción segura. Los errores se muestran de forma genérica al usuario, sin detalles internos.
+
+En pocas palabras: en tu computadora para desarrollar dejas `DEBUG=True`; en cualquier servidor donde el
+sistema quede accesible para otras personas, `DEBUG` debe estar en `False` (o simplemente no definirlo, ya
+que ese es el default).
+
+#### `ALLOWED_HOSTS`
+
+Lista (separada por comas) de los dominios o IPs desde los que se puede servir el sistema — es una
+protección contra cierto tipo de ataques que falsifican el encabezado `Host` de la petición. En desarrollo
+local basta con `127.0.0.1,localhost` (ya viene así en el `.env.example`). En producción, agrega aquí el
+dominio real (ej. `ALLOWED_HOSTS=midominio.com,www.midominio.com`).
 
 ### 5. Preparar la base de datos y arrancar
 
