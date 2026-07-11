@@ -290,3 +290,20 @@ DB_PORT=5432
 Si `DB_ENGINE` no se define (o no es `postgresql`), el sistema sigue usando SQLite automáticamente — no es
 obligatorio cambiarlo. El servidor de PostgreSQL debe quedar configurado para escuchar solo en `localhost`
 (nunca expuesto directo a internet), igual que Waitress.
+
+### 6. Base de datos (alternativa): SQL Server
+
+También se puede usar **Microsoft SQL Server** (Express u otra edición) en vez de PostgreSQL o SQLite.
+Requiere tener instalado en Windows el **ODBC Driver 17 (o superior) for SQL Server** (normalmente ya viene
+con la instalación del motor de SQL Server) y los paquetes `mssql-django`/`pyodbc` (ya incluidos en
+`requirements.txt`). En el `.env`:
+```
+DB_ENGINE=mssql
+DB_NAME=tickets_db
+DB_USER=tickets_app
+DB_PASSWORD=<contraseña fuerte>
+DB_HOST=localhost\SQLEXPRESS
+DB_ODBC_DRIVER=ODBC Driver 17 for SQL Server
+```
+Si tu instancia no es nombrada (instalación por default sin `\SQLEXPRESS`), usa `DB_HOST=localhost` y
+`DB_PORT=1433`. Igual que con PostgreSQL, si `DB_ENGINE` no se define el sistema sigue usando SQLite.
