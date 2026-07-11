@@ -89,9 +89,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 # Por default usa SQLite (ideal para desarrollo local). Para producción con
-# PostgreSQL, define DB_ENGINE=postgresql y el resto de las variables DB_* en el .env.
+# PostgreSQL o SQL Server, define DB_ENGINE=postgresql o DB_ENGINE=mssql y el
+# resto de las variables DB_* en el .env.
 
-if os.environ.get('DB_ENGINE') == 'postgresql':
+DB_ENGINE_SELECCIONADO = os.environ.get('DB_ENGINE')
+
+if DB_ENGINE_SELECCIONADO == 'postgresql':
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -100,6 +103,21 @@ if os.environ.get('DB_ENGINE') == 'postgresql':
             'PASSWORD': os.environ.get('DB_PASSWORD'),
             'HOST': os.environ.get('DB_HOST', 'localhost'),
             'PORT': os.environ.get('DB_PORT', '5432'),
+        }
+    }
+elif DB_ENGINE_SELECCIONADO == 'mssql':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'mssql',
+            'NAME': os.environ.get('DB_NAME'),
+            'USER': os.environ.get('DB_USER'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', ''),
+            'OPTIONS': {
+                'driver': os.environ.get('DB_ODBC_DRIVER', 'ODBC Driver 17 for SQL Server'),
+                'extra_params': 'TrustServerCertificate=yes',
+            },
         }
     }
 else:
