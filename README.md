@@ -307,3 +307,25 @@ DB_ODBC_DRIVER=ODBC Driver 17 for SQL Server
 ```
 Si tu instancia no es nombrada (instalación por default sin `\SQLEXPRESS`), usa `DB_HOST=localhost` y
 `DB_PORT=1433`. Igual que con PostgreSQL, si `DB_ENGINE` no se define el sistema sigue usando SQLite.
+
+#### Crear la base de datos y el login automáticamente
+
+Django crea las tablas solo (vía `migrate`), pero **no crea la base de datos ni el login** — eso hay que
+hacerlo antes, a mano con SSMS o con el script [`deploy/mssql/bootstrap_db.ps1`](deploy/mssql/bootstrap_db.ps1)
+que automatiza ambos pasos en uno. Requiere tener SQL Server ya instalado y corriendo (y un login
+administrador, normalmente `sa`, con modo mixto de autenticación activado).
+
+Desde PowerShell, en la raíz del proyecto:
+```powershell
+.\deploy\mssql\bootstrap_db.ps1 -SaPassword "<contraseña del sa>" -AppPassword "<contraseña nueva para la app>" -RunMigrate
+```
+
+Esto:
+1. Crea la base de datos (`tickets_db` por default) si no existe.
+2. Crea un login/usuario dedicado para la app (`tickets_app` por default, nunca usa `sa`) si no existe.
+3. Con `-RunMigrate`, corre de una vez `python manage.py migrate` contra esa base.
+4. Al final imprime las líneas exactas que debes copiar a tu `.env`.
+
+Es seguro correrlo varias veces — si la base o el login ya existen, no hace nada y sigue de largo. Parámetros
+opcionales: `-SqlInstance` (default `localhost\SQLEXPRESS`), `-DbName` y `-AppLogin` (para usar otro nombre
+de base o de usuario).
