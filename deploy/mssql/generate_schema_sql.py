@@ -1,5 +1,8 @@
 """
-Genera deploy/mssql/schema.sql a partir de las migraciones actuales de Django.
+Genera deploy/mssql/schema.sql: un script T-SQL que crea la base de datos, el
+login/usuario de la app, y todas las tablas del sistema (a partir de las
+migraciones actuales de Django). El .sql resultante se ejecuta directo en
+SQL Server (SSMS o sqlcmd) sin necesitar Python en el servidor destino.
 
 Uso (desde la raiz del proyecto, con el entorno virtual activado):
     python deploy/mssql/generate_schema_sql.py
@@ -7,6 +10,10 @@ Uso (desde la raiz del proyecto, con el entorno virtual activado):
 Vuelve a correrlo cada vez que agregues migraciones nuevas para mantener
 schema.sql al dia. Requiere que DB_ENGINE=mssql este activo (en el .env o
 como variable de entorno), ya que el SQL generado es especifico de SQL Server.
+
+Para usar otro nombre de base de datos o de login que no sea el default
+(tickets_db / tickets_app), define SCHEMA_SQL_DB_NAME / SCHEMA_SQL_APP_LOGIN
+como variables de entorno antes de correr este script.
 
 Ver deploy/mssql/README.md para instrucciones de como usar el .sql resultante.
 """
@@ -42,12 +49,54 @@ targets = executor.loader.graph.leaf_nodes()
 plan = [(migration.app_label, migration.name)
         for migration, backwards in executor.migration_plan(targets, clean_start=True)]
 
+DB_NAME = os.environ.get('SCHEMA_SQL_DB_NAME', 'tickets_db')
+APP_LOGIN = os.environ.get('SCHEMA_SQL_APP_LOGIN', 'tickets_app')
+APP_PASSWORD_PLACEHOLDER = 'CAMBIA_ESTA_CONTRASENA_123!'
+
 parts = []
-parts.append("-- Script generado automaticamente a partir de las migraciones de Django.")
-parts.append("-- Crea todas las tablas del sistema en una base de datos SQL Server vacia,")
-parts.append("-- sin necesitar Python/Django instalado en ese servidor.")
-parts.append("-- Ver deploy/mssql/README.md para instrucciones de uso.")
+parts.append("-- ============================================================")
+parts.append("-- Script completo: crea la base de datos, el login/usuario de")
+parts.append("-- la aplicacion, y todas las tablas del sistema (a partir de")
+parts.append("-- las migraciones de Django). No requiere Python/Django")
+parts.append("-- instalado en el servidor destino.")
+parts.append("--")
+parts.append("-- ANTES DE EJECUTAR, cambia la contrasena de abajo (aparece una")
+parts.append(f"-- sola vez, en el CREATE LOGIN). Si quieres otro nombre de base")
+parts.append(f"-- de datos o de login, usa Buscar y Reemplazar en todo el archivo")
+parts.append(f"-- para '{DB_NAME}' / '{APP_LOGIN}' antes de correrlo.")
+parts.append("--")
+parts.append("-- Ejecutar conectado a la instancia de SQL Server (con un login")
+parts.append("-- administrador, ej. sa) desde SSMS (abrir el archivo, Execute/F5)")
+parts.append("-- o sqlcmd. Es seguro de correr varias veces: si la base, el login")
+parts.append("-- o las tablas ya existen, no se vuelven a crear.")
+parts.append("--")
 parts.append("-- Generado con: python deploy/mssql/generate_schema_sql.py")
+parts.append("-- Ver deploy/mssql/README.md para mas detalles.")
+parts.append("-- ============================================================")
+parts.append("")
+parts.append(f"IF DB_ID('{DB_NAME}') IS NULL")
+parts.append("BEGIN")
+parts.append(f"    CREATE DATABASE [{DB_NAME}];")
+parts.append("END")
+parts.append("GO")
+parts.append("")
+parts.append(f"IF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = '{APP_LOGIN}')")
+parts.append("BEGIN")
+parts.append(f"    CREATE LOGIN [{APP_LOGIN}] WITH PASSWORD = '{APP_PASSWORD_PLACEHOLDER}', CHECK_POLICY = ON;")
+parts.append("END")
+parts.append("GO")
+parts.append("")
+parts.append(f"USE [{DB_NAME}];")
+parts.append("GO")
+parts.append("")
+parts.append(f"IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = '{APP_LOGIN}')")
+parts.append("BEGIN")
+parts.append(f"    CREATE USER [{APP_LOGIN}] FOR LOGIN [{APP_LOGIN}];")
+parts.append(f"    ALTER ROLE db_owner ADD MEMBER [{APP_LOGIN}];")
+parts.append("END")
+parts.append("GO")
+parts.append("")
+parts.append("-- ==== Tablas (generadas desde las migraciones de Django) ====")
 parts.append("")
 
 # django_migrations no se crea via una migracion normal (Django la crea sola,

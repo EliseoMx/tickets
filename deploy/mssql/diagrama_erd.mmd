@@ -1,0 +1,69 @@
+erDiagram
+    EMPRESA ||--o{ TICKET : "tiene"
+    EMPRESA }o--o{ USUARIO : "usuarios con acceso (tickets_usuario_empresas)"
+    USUARIO ||--o{ TICKET : "crea (cliente)"
+    USUARIO ||--o{ TICKET : "cierra (cerrado_por)"
+    USUARIO ||--o{ TICKETACTUALIZACION : "autor"
+    TICKET ||--o{ TICKETACTUALIZACION : "tiene"
+    TICKET ||--o{ TICKETIMAGEN : "adjuntos del ticket"
+    TICKETACTUALIZACION ||--o{ TICKETIMAGEN : "adjuntos de la actualizacion"
+
+    EMPRESA {
+        int id PK
+        string nombre UK "unico"
+        string descripcion
+        image logo "disco local del servidor"
+        bool activa
+        datetime fecha_creacion
+        bool eliminada "soft delete"
+        datetime fecha_eliminacion
+    }
+    USUARIO {
+        int id PK
+        string username UK
+        string email
+        string telefono
+        string rol "agente/soporte/cliente"
+        bool protegido "cuenta admin protegida"
+        bool is_active "activar/desactivar"
+        bool is_superuser
+        datetime date_joined
+    }
+    TICKET {
+        int id PK
+        int empresa_id FK "nullable"
+        string empresa_eliminada_nombre "respaldo si se borra la empresa"
+        int cliente_id FK "nullable"
+        string cliente_eliminado_nombre "respaldo si se borra el usuario"
+        string tipo "incidente/requerimiento"
+        string titulo
+        text descripcion
+        string medio_contacto
+        string dato_contacto
+        string estado "abierto/en_proceso/pendiente_confirmacion/cerrado"
+        int cerrado_por_id FK "nullable"
+        text evidencia_resolucion
+        datetime fecha_creacion
+        datetime fecha_cierre
+        datetime fecha_limite_confirmacion
+        string motivo_cierre
+        file pdf_cierre "Cloudinary raw"
+        bool requiere_atencion
+        bool requiere_atencion_cliente
+    }
+    TICKETACTUALIZACION {
+        int id PK
+        int ticket_id FK
+        int autor_id FK "nullable"
+        string estado_en_ese_momento
+        text comentario
+        datetime fecha_creacion
+    }
+    TICKETIMAGEN {
+        int id PK
+        int ticket_id FK "nullable"
+        int actualizacion_id FK "nullable"
+        file imagen "Cloudinary"
+        string nombre_original
+        datetime fecha_creacion
+    }

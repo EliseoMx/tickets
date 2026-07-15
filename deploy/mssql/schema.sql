@@ -1,8 +1,46 @@
--- Script generado automaticamente a partir de las migraciones de Django.
--- Crea todas las tablas del sistema en una base de datos SQL Server vacia,
--- sin necesitar Python/Django instalado en ese servidor.
--- Ver deploy/mssql/README.md para instrucciones de uso.
+-- ============================================================
+-- Script completo: crea la base de datos, el login/usuario de
+-- la aplicacion, y todas las tablas del sistema (a partir de
+-- las migraciones de Django). No requiere Python/Django
+-- instalado en el servidor destino.
+--
+-- ANTES DE EJECUTAR, cambia la contrasena de abajo (aparece una
+-- sola vez, en el CREATE LOGIN). Si quieres otro nombre de base
+-- de datos o de login, usa Buscar y Reemplazar en todo el archivo
+-- para 'tickets_db' / 'tickets_app' antes de correrlo.
+--
+-- Ejecutar conectado a la instancia de SQL Server (con un login
+-- administrador, ej. sa) desde SSMS (abrir el archivo, Execute/F5)
+-- o sqlcmd. Es seguro de correr varias veces: si la base, el login
+-- o las tablas ya existen, no se vuelven a crear.
+--
 -- Generado con: python deploy/mssql/generate_schema_sql.py
+-- Ver deploy/mssql/README.md para mas detalles.
+-- ============================================================
+
+IF DB_ID('tickets_db') IS NULL
+BEGIN
+    CREATE DATABASE [tickets_db];
+END
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.sql_logins WHERE name = 'tickets_app')
+BEGIN
+    CREATE LOGIN [tickets_app] WITH PASSWORD = 'CAMBIA_ESTA_CONTRASENA_123!', CHECK_POLICY = ON;
+END
+GO
+
+USE [tickets_db];
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'tickets_app')
+BEGIN
+    CREATE USER [tickets_app] FOR LOGIN [tickets_app];
+    ALTER ROLE db_owner ADD MEMBER [tickets_app];
+END
+GO
+
+-- ==== Tablas (generadas desde las migraciones de Django) ====
 
 -- ==== django_migrations (tabla de control interna de Django) ====
 CREATE TABLE [django_migrations] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [app] nvarchar(255) NOT NULL, [name] nvarchar(255) NOT NULL, [applied] datetimeoffset NOT NULL);
@@ -57,14 +95,14 @@ CREATE TABLE [auth_group_permissions] ([id] bigint NOT NULL PRIMARY KEY IDENTITY
 -- Create model User
 --
 -- (no-op)
-ALTER TABLE [auth_group_permissions] ADD CONSTRAINT [auth_group_permissions_permission_id_84c5c92e_fk_auth_permission_id] FOREIGN KEY ([permission_id]) REFERENCES [auth_permission] ([id]);
 CREATE INDEX [auth_group_permissions_permission_id_84c5c92e] ON [auth_group_permissions] ([permission_id]);
-CREATE INDEX [auth_group_permissions_group_id_b120cbf9] ON [auth_group_permissions] ([group_id]);
 CREATE UNIQUE INDEX [auth_group_permissions_group_id_permission_id_0cd325b0_uniq] ON [auth_group_permissions] ([group_id], [permission_id]) WHERE [group_id] IS NOT NULL AND [permission_id] IS NOT NULL;
-ALTER TABLE [auth_group_permissions] ADD CONSTRAINT [auth_group_permissions_group_id_b120cbf9_fk_auth_group_id] FOREIGN KEY ([group_id]) REFERENCES [auth_group] ([id]);
-CREATE UNIQUE INDEX [auth_permission_content_type_id_codename_01ab375a_uniq] ON [auth_permission] ([content_type_id], [codename]) WHERE [content_type_id] IS NOT NULL AND [codename] IS NOT NULL;
 ALTER TABLE [auth_permission] ADD CONSTRAINT [auth_permission_content_type_id_2f476e4b_fk_django_content_type_id] FOREIGN KEY ([content_type_id]) REFERENCES [django_content_type] ([id]);
 CREATE INDEX [auth_permission_content_type_id_2f476e4b] ON [auth_permission] ([content_type_id]);
+ALTER TABLE [auth_group_permissions] ADD CONSTRAINT [auth_group_permissions_permission_id_84c5c92e_fk_auth_permission_id] FOREIGN KEY ([permission_id]) REFERENCES [auth_permission] ([id]);
+CREATE UNIQUE INDEX [auth_permission_content_type_id_codename_01ab375a_uniq] ON [auth_permission] ([content_type_id], [codename]) WHERE [content_type_id] IS NOT NULL AND [codename] IS NOT NULL;
+CREATE INDEX [auth_group_permissions_group_id_b120cbf9] ON [auth_group_permissions] ([group_id]);
+ALTER TABLE [auth_group_permissions] ADD CONSTRAINT [auth_group_permissions_group_id_b120cbf9_fk_auth_group_id] FOREIGN KEY ([group_id]) REFERENCES [auth_group] ([id]);
 COMMIT;
 
 -- ==== auth.0002_alter_permission_name_max_length ====
@@ -159,16 +197,16 @@ BEGIN TRANSACTION
 CREATE TABLE [tickets_usuario] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [password] nvarchar(128) NOT NULL, [last_login] datetimeoffset NULL, [is_superuser] bit NOT NULL, [username] nvarchar(150) NOT NULL UNIQUE, [first_name] nvarchar(150) NOT NULL, [last_name] nvarchar(150) NOT NULL, [email] nvarchar(254) NOT NULL, [is_staff] bit NOT NULL, [is_active] bit NOT NULL, [date_joined] datetimeoffset NOT NULL, [rol] nvarchar(10) NOT NULL);
 CREATE TABLE [tickets_usuario_groups] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [usuario_id] bigint NOT NULL, [group_id] int NOT NULL);
 CREATE TABLE [tickets_usuario_user_permissions] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [usuario_id] bigint NOT NULL, [permission_id] int NOT NULL);
-ALTER TABLE [tickets_usuario_groups] ADD CONSTRAINT [tickets_usuario_groups_group_id_b1f24160_fk_auth_group_id] FOREIGN KEY ([group_id]) REFERENCES [auth_group] ([id]);
-CREATE UNIQUE INDEX [tickets_usuario_user_permissions_usuario_id_permission_id_c388dded_uniq] ON [tickets_usuario_user_permissions] ([usuario_id], [permission_id]) WHERE [usuario_id] IS NOT NULL AND [permission_id] IS NOT NULL;
-CREATE INDEX [tickets_usuario_user_permissions_permission_id_6e9c6dd3] ON [tickets_usuario_user_permissions] ([permission_id]);
-CREATE UNIQUE INDEX [tickets_usuario_groups_usuario_id_group_id_dcc19ad1_uniq] ON [tickets_usuario_groups] ([usuario_id], [group_id]) WHERE [usuario_id] IS NOT NULL AND [group_id] IS NOT NULL;
 ALTER TABLE [tickets_usuario_groups] ADD CONSTRAINT [tickets_usuario_groups_usuario_id_9c46a480_fk_tickets_usuario_id] FOREIGN KEY ([usuario_id]) REFERENCES [tickets_usuario] ([id]);
-CREATE INDEX [tickets_usuario_groups_usuario_id_9c46a480] ON [tickets_usuario_groups] ([usuario_id]);
-ALTER TABLE [tickets_usuario_user_permissions] ADD CONSTRAINT [tickets_usuario_user_permissions_usuario_id_1cb978c2_fk_tickets_usuario_id] FOREIGN KEY ([usuario_id]) REFERENCES [tickets_usuario] ([id]);
-CREATE INDEX [tickets_usuario_groups_group_id_b1f24160] ON [tickets_usuario_groups] ([group_id]);
 CREATE INDEX [tickets_usuario_user_permissions_usuario_id_1cb978c2] ON [tickets_usuario_user_permissions] ([usuario_id]);
 ALTER TABLE [tickets_usuario_user_permissions] ADD CONSTRAINT [tickets_usuario_user_permissions_permission_id_6e9c6dd3_fk_auth_permission_id] FOREIGN KEY ([permission_id]) REFERENCES [auth_permission] ([id]);
+CREATE UNIQUE INDEX [tickets_usuario_user_permissions_usuario_id_permission_id_c388dded_uniq] ON [tickets_usuario_user_permissions] ([usuario_id], [permission_id]) WHERE [usuario_id] IS NOT NULL AND [permission_id] IS NOT NULL;
+ALTER TABLE [tickets_usuario_user_permissions] ADD CONSTRAINT [tickets_usuario_user_permissions_usuario_id_1cb978c2_fk_tickets_usuario_id] FOREIGN KEY ([usuario_id]) REFERENCES [tickets_usuario] ([id]);
+CREATE INDEX [tickets_usuario_groups_usuario_id_9c46a480] ON [tickets_usuario_groups] ([usuario_id]);
+ALTER TABLE [tickets_usuario_groups] ADD CONSTRAINT [tickets_usuario_groups_group_id_b1f24160_fk_auth_group_id] FOREIGN KEY ([group_id]) REFERENCES [auth_group] ([id]);
+CREATE UNIQUE INDEX [tickets_usuario_groups_usuario_id_group_id_dcc19ad1_uniq] ON [tickets_usuario_groups] ([usuario_id], [group_id]) WHERE [usuario_id] IS NOT NULL AND [group_id] IS NOT NULL;
+CREATE INDEX [tickets_usuario_user_permissions_permission_id_6e9c6dd3] ON [tickets_usuario_user_permissions] ([permission_id]);
+CREATE INDEX [tickets_usuario_groups_group_id_b1f24160] ON [tickets_usuario_groups] ([group_id]);
 COMMIT;
 
 -- ==== admin.0001_initial ====
@@ -177,8 +215,8 @@ BEGIN TRANSACTION
 -- Create model LogEntry
 --
 CREATE TABLE [django_admin_log] ([id] int NOT NULL PRIMARY KEY IDENTITY (1, 1), [action_time] datetimeoffset NOT NULL, [object_id] nvarchar(max) NULL, [object_repr] nvarchar(200) NOT NULL, [action_flag] smallint NOT NULL CONSTRAINT django_admin_log_action_flag_a8637d59_check CHECK ([action_flag] >= 0), [change_message] nvarchar(max) NOT NULL, [content_type_id] int NULL, [user_id] bigint NOT NULL);
-ALTER TABLE [django_admin_log] ADD CONSTRAINT [django_admin_log_user_id_c564eba6_fk_tickets_usuario_id] FOREIGN KEY ([user_id]) REFERENCES [tickets_usuario] ([id]);
 ALTER TABLE [django_admin_log] ADD CONSTRAINT [django_admin_log_content_type_id_c4bce8eb_fk_django_content_type_id] FOREIGN KEY ([content_type_id]) REFERENCES [django_content_type] ([id]);
+ALTER TABLE [django_admin_log] ADD CONSTRAINT [django_admin_log_user_id_c564eba6_fk_tickets_usuario_id] FOREIGN KEY ([user_id]) REFERENCES [tickets_usuario] ([id]);
 CREATE INDEX [django_admin_log_user_id_c564eba6] ON [django_admin_log] ([user_id]);
 CREATE INDEX [django_admin_log_content_type_id_c4bce8eb] ON [django_admin_log] ([content_type_id]);
 COMMIT;
@@ -367,9 +405,9 @@ BEGIN TRANSACTION
 -- Create model AccessFailureLog
 --
 CREATE TABLE [axes_accessfailurelog] ([id] int NOT NULL PRIMARY KEY IDENTITY (1, 1), [user_agent] nvarchar(255) NOT NULL, [ip_address] nvarchar(39) NULL, [username] nvarchar(255) NULL, [http_accept] nvarchar(1025) NOT NULL, [path_info] nvarchar(255) NOT NULL, [attempt_time] datetimeoffset NOT NULL, [locked_out] bit NOT NULL);
-CREATE INDEX [axes_accessfailurelog_user_agent_ea145dda] ON [axes_accessfailurelog] ([user_agent]);
 CREATE INDEX [axes_accessfailurelog_ip_address_2e9f5a7f] ON [axes_accessfailurelog] ([ip_address]);
 CREATE INDEX [axes_accessfailurelog_username_a8b7e8a4] ON [axes_accessfailurelog] ([username]);
+CREATE INDEX [axes_accessfailurelog_user_agent_ea145dda] ON [axes_accessfailurelog] ([user_agent]);
 COMMIT;
 
 -- ==== axes.0009_add_session_hash ====
@@ -410,11 +448,11 @@ CREATE TABLE [tickets_empresa] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1)
 -- Add field empresas to usuario
 --
 CREATE TABLE [tickets_usuario_empresas] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [usuario_id] bigint NOT NULL, [empresa_id] bigint NOT NULL);
-CREATE UNIQUE INDEX [tickets_usuario_empresas_usuario_id_empresa_id_63501da9_uniq] ON [tickets_usuario_empresas] ([usuario_id], [empresa_id]) WHERE [usuario_id] IS NOT NULL AND [empresa_id] IS NOT NULL;
-ALTER TABLE [tickets_usuario_empresas] ADD CONSTRAINT [tickets_usuario_empresas_usuario_id_ad589812_fk_tickets_usuario_id] FOREIGN KEY ([usuario_id]) REFERENCES [tickets_usuario] ([id]);
 ALTER TABLE [tickets_usuario_empresas] ADD CONSTRAINT [tickets_usuario_empresas_empresa_id_785c1ad9_fk_tickets_empresa_id] FOREIGN KEY ([empresa_id]) REFERENCES [tickets_empresa] ([id]);
-CREATE INDEX [tickets_usuario_empresas_usuario_id_ad589812] ON [tickets_usuario_empresas] ([usuario_id]);
 CREATE INDEX [tickets_usuario_empresas_empresa_id_785c1ad9] ON [tickets_usuario_empresas] ([empresa_id]);
+CREATE INDEX [tickets_usuario_empresas_usuario_id_ad589812] ON [tickets_usuario_empresas] ([usuario_id]);
+ALTER TABLE [tickets_usuario_empresas] ADD CONSTRAINT [tickets_usuario_empresas_usuario_id_ad589812_fk_tickets_usuario_id] FOREIGN KEY ([usuario_id]) REFERENCES [tickets_usuario] ([id]);
+CREATE UNIQUE INDEX [tickets_usuario_empresas_usuario_id_empresa_id_63501da9_uniq] ON [tickets_usuario_empresas] ([usuario_id], [empresa_id]) WHERE [usuario_id] IS NOT NULL AND [empresa_id] IS NOT NULL;
 COMMIT;
 
 -- ==== tickets.0003_ticket ====
@@ -423,10 +461,10 @@ BEGIN TRANSACTION
 -- Create model Ticket
 --
 CREATE TABLE [tickets_ticket] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [tipo] nvarchar(15) NOT NULL, [titulo] nvarchar(150) NOT NULL, [descripcion] nvarchar(max) NOT NULL, [estado] nvarchar(15) NOT NULL, [fecha_creacion] datetimeoffset NOT NULL, [fecha_actualizacion] datetimeoffset NOT NULL, [cliente_id] bigint NOT NULL, [empresa_id] bigint NOT NULL);
-CREATE INDEX [tickets_ticket_empresa_id_2f938afb] ON [tickets_ticket] ([empresa_id]);
-CREATE INDEX [tickets_ticket_cliente_id_051f0dae] ON [tickets_ticket] ([cliente_id]);
 ALTER TABLE [tickets_ticket] ADD CONSTRAINT [tickets_ticket_cliente_id_051f0dae_fk_tickets_usuario_id] FOREIGN KEY ([cliente_id]) REFERENCES [tickets_usuario] ([id]);
+CREATE INDEX [tickets_ticket_empresa_id_2f938afb] ON [tickets_ticket] ([empresa_id]);
 ALTER TABLE [tickets_ticket] ADD CONSTRAINT [tickets_ticket_empresa_id_2f938afb_fk_tickets_empresa_id] FOREIGN KEY ([empresa_id]) REFERENCES [tickets_empresa] ([id]);
+CREATE INDEX [tickets_ticket_cliente_id_051f0dae] ON [tickets_ticket] ([cliente_id]);
 COMMIT;
 
 -- ==== tickets.0004_ticket_contacto_alternativo_ticket_dato_contacto_and_more ====
@@ -475,10 +513,10 @@ BEGIN TRANSACTION
 -- Create model TicketActualizacion
 --
 CREATE TABLE [tickets_ticketactualizacion] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [estado_en_ese_momento] nvarchar(15) NOT NULL, [comentario] nvarchar(max) NOT NULL, [fecha_creacion] datetimeoffset NOT NULL, [autor_id] bigint NULL, [ticket_id] bigint NOT NULL);
-ALTER TABLE [tickets_ticketactualizacion] ADD CONSTRAINT [tickets_ticketactualizacion_ticket_id_94ba2691_fk_tickets_ticket_id] FOREIGN KEY ([ticket_id]) REFERENCES [tickets_ticket] ([id]);
-CREATE INDEX [tickets_ticketactualizacion_autor_id_0b3e4e46] ON [tickets_ticketactualizacion] ([autor_id]);
 ALTER TABLE [tickets_ticketactualizacion] ADD CONSTRAINT [tickets_ticketactualizacion_autor_id_0b3e4e46_fk_tickets_usuario_id] FOREIGN KEY ([autor_id]) REFERENCES [tickets_usuario] ([id]);
+CREATE INDEX [tickets_ticketactualizacion_autor_id_0b3e4e46] ON [tickets_ticketactualizacion] ([autor_id]);
 CREATE INDEX [tickets_ticketactualizacion_ticket_id_94ba2691] ON [tickets_ticketactualizacion] ([ticket_id]);
+ALTER TABLE [tickets_ticketactualizacion] ADD CONSTRAINT [tickets_ticketactualizacion_ticket_id_94ba2691_fk_tickets_ticket_id] FOREIGN KEY ([ticket_id]) REFERENCES [tickets_ticket] ([id]);
 COMMIT;
 
 -- ==== tickets.0008_ticket_cerrado_por_ticket_fecha_cierre ====
@@ -526,9 +564,9 @@ BEGIN TRANSACTION
 --
 CREATE TABLE [tickets_ticketimagen] ([id] bigint NOT NULL PRIMARY KEY IDENTITY (1, 1), [imagen] nvarchar(100) NOT NULL, [fecha_creacion] datetimeoffset NOT NULL, [actualizacion_id] bigint NULL, [ticket_id] bigint NULL);
 ALTER TABLE [tickets_ticketimagen] ADD CONSTRAINT [tickets_ticketimagen_actualizacion_id_f7563e89_fk_tickets_ticketactualizacion_id] FOREIGN KEY ([actualizacion_id]) REFERENCES [tickets_ticketactualizacion] ([id]);
-CREATE INDEX [tickets_ticketimagen_actualizacion_id_f7563e89] ON [tickets_ticketimagen] ([actualizacion_id]);
 CREATE INDEX [tickets_ticketimagen_ticket_id_e4766c14] ON [tickets_ticketimagen] ([ticket_id]);
 ALTER TABLE [tickets_ticketimagen] ADD CONSTRAINT [tickets_ticketimagen_ticket_id_e4766c14_fk_tickets_ticket_id] FOREIGN KEY ([ticket_id]) REFERENCES [tickets_ticket] ([id]);
+CREATE INDEX [tickets_ticketimagen_actualizacion_id_f7563e89] ON [tickets_ticketimagen] ([actualizacion_id]);
 COMMIT;
 
 -- ==== tickets.0012_ticket_fecha_limite_confirmacion_and_more ====
@@ -688,54 +726,54 @@ ALTER TABLE [tickets_ticket] ADD CONSTRAINT [tickets_ticket_empresa_id_2f938afb_
 COMMIT;
 
 -- ==== Registro de migraciones aplicadas (para que Django reconozca el esquema) ====
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('contenttypes', '0001_initial', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('contenttypes', '0002_remove_content_type_name', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0001_initial', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0002_alter_permission_name_max_length', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0003_alter_user_email_max_length', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0004_alter_user_username_opts', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0005_alter_user_last_login_null', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0006_require_contenttypes_0002', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0007_alter_validators_add_error_messages', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0008_alter_user_username_max_length', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0009_alter_user_last_name_max_length', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0010_alter_group_name_max_length', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0011_update_proxy_permissions', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0012_alter_user_first_name_max_length', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0001_initial', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('admin', '0001_initial', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('admin', '0002_logentry_remove_auto_add', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('admin', '0003_logentry_add_action_flag_choices', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0001_initial', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0002_auto_20151217_2044', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0003_auto_20160322_0929', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0004_auto_20181024_1538', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0005_remove_accessattempt_trusted', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0006_remove_accesslog_trusted', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0007_alter_accessattempt_unique_together', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0008_accessfailurelog', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0009_add_session_hash', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0010_accessattemptexpiration', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('sessions', '0001_initial', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0002_empresa_usuario_empresas', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0003_ticket', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0004_ticket_contacto_alternativo_ticket_dato_contacto_and_more', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0005_alter_usuario_rol', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0006_ticket_evidencia_resolucion', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0007_ticketactualizacion', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0008_ticket_cerrado_por_ticket_fecha_cierre', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0009_empresa_eliminada_empresa_fecha_eliminacion', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0010_ticket_requiere_atencion', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0011_ticketimagen', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0012_ticket_fecha_limite_confirmacion_and_more', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0013_alter_usuario_rol', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0014_usuario_telefono_alter_usuario_email', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0015_alter_usuario_rol', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0016_ticket_cliente_eliminado_nombre_alter_ticket_cliente_and_more', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0017_usuario_protegido', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0018_alter_ticketimagen_imagen', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0019_ticketimagen_nombre_original_and_more', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0020_alter_ticketimagen_imagen', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0021_ticket_requiere_atencion_cliente', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0022_empresa_logo', '2026-07-15 03:13:37');
-INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0023_ticket_empresa_eliminada_nombre_alter_ticket_empresa_and_more', '2026-07-15 03:13:37');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('contenttypes', '0001_initial', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('contenttypes', '0002_remove_content_type_name', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0001_initial', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0002_alter_permission_name_max_length', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0003_alter_user_email_max_length', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0004_alter_user_username_opts', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0005_alter_user_last_login_null', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0006_require_contenttypes_0002', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0007_alter_validators_add_error_messages', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0008_alter_user_username_max_length', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0009_alter_user_last_name_max_length', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0010_alter_group_name_max_length', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0011_update_proxy_permissions', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('auth', '0012_alter_user_first_name_max_length', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0001_initial', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('admin', '0001_initial', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('admin', '0002_logentry_remove_auto_add', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('admin', '0003_logentry_add_action_flag_choices', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0001_initial', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0002_auto_20151217_2044', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0003_auto_20160322_0929', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0004_auto_20181024_1538', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0005_remove_accessattempt_trusted', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0006_remove_accesslog_trusted', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0007_alter_accessattempt_unique_together', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0008_accessfailurelog', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0009_add_session_hash', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('axes', '0010_accessattemptexpiration', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('sessions', '0001_initial', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0002_empresa_usuario_empresas', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0003_ticket', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0004_ticket_contacto_alternativo_ticket_dato_contacto_and_more', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0005_alter_usuario_rol', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0006_ticket_evidencia_resolucion', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0007_ticketactualizacion', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0008_ticket_cerrado_por_ticket_fecha_cierre', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0009_empresa_eliminada_empresa_fecha_eliminacion', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0010_ticket_requiere_atencion', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0011_ticketimagen', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0012_ticket_fecha_limite_confirmacion_and_more', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0013_alter_usuario_rol', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0014_usuario_telefono_alter_usuario_email', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0015_alter_usuario_rol', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0016_ticket_cliente_eliminado_nombre_alter_ticket_cliente_and_more', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0017_usuario_protegido', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0018_alter_ticketimagen_imagen', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0019_ticketimagen_nombre_original_and_more', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0020_alter_ticketimagen_imagen', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0021_ticket_requiere_atencion_cliente', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0022_empresa_logo', '2026-07-15 03:22:06');
+INSERT INTO [django_migrations] ([app], [name], [applied]) VALUES ('tickets', '0023_ticket_empresa_eliminada_nombre_alter_ticket_empresa_and_more', '2026-07-15 03:22:06');
