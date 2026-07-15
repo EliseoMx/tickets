@@ -329,3 +329,31 @@ Esto:
 Es seguro correrlo varias veces — si la base o el login ya existen, no hace nada y sigue de largo. Parámetros
 opcionales: `-SqlInstance` (default `localhost\SQLEXPRESS`), `-DbName` y `-AppLogin` (para usar otro nombre
 de base o de usuario).
+
+#### Crear las tablas con un script `.sql`, sin necesitar Python/Django
+
+Si vas a instalar el sistema en otro servidor y quieres crear las tablas tú mismo (revisando el SQL antes,
+o sin tener Python instalado ahí todavía), usa [`deploy/mssql/schema.sql`](deploy/mssql/schema.sql) en vez de
+`python manage.py migrate`. Es un script T-SQL generado a partir de las migraciones del proyecto, que crea
+todas las tablas de una sola vez.
+
+**1. Crea la base de datos y el login** (con `bootstrap_db.ps1` de arriba, o a mano en SSMS).
+
+**2. Corre `schema.sql` contra esa base** — con SSMS (ábrelo, conéctate a la base correcta, `F5`), o con
+`sqlcmd`:
+```powershell
+sqlcmd -S localhost\SQLEXPRESS -d tickets_db -U tickets_app -P "<contraseña>" -i deploy\mssql\schema.sql
+```
+
+**3. Ajusta el `.env`** de ese servidor con los datos de esa base (`DB_ENGINE=mssql`, `DB_NAME`, `DB_USER`,
+`DB_PASSWORD`, `DB_HOST`) — **no hace falta correr `python manage.py migrate` ahí**, porque `schema.sql` ya
+deja registradas las migraciones como aplicadas (Django lo reconoce como "sin migraciones pendientes").
+
+**4. Arranca la app normalmente** ahí (ver la sección de despliegue con IIS más abajo, o `runserver` si es
+solo para probar).
+
+Si más adelante agregas migraciones nuevas al proyecto, regenera el script:
+```powershell
+python deploy/mssql/generate_schema_sql.py
+```
+Más detalles y notas técnicas en [`deploy/mssql/README.md`](deploy/mssql/README.md).
