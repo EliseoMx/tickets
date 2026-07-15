@@ -274,6 +274,37 @@ SECRET_KEY=<genera una nueva, ver sección de Configuración de arriba>
 5. Para HTTPS, instala un certificado en IIS — gratis con Let's Encrypt usando
    **[win-acme](https://www.win-acme.com/)**.
 
+#### Usar otro puerto interno (si el 8000 ya está ocupado)
+
+Esta guía usa el puerto **8000** para la comunicación interna entre IIS y Waitress (pasos 1 y 4 de arriba).
+Ese puerto **nunca queda expuesto a internet** — solo lo usan IIS y Waitress para hablar entre sí dentro del
+mismo servidor. Si en el servidor destino ese puerto ya lo usa otro sistema interno, elige otro (por ejemplo
+`8100`) y ponlo en estos 3 lugares, para que coincidan entre sí:
+
+1. **El comando de Waitress** (paso 1, "Servidor WSGI"):
+   ```powershell
+   waitress-serve --host=127.0.0.1 --port=8100 config.wsgi:application
+   ```
+2. **El servicio de NSSM**:
+   ```powershell
+   nssm install SistemaTickets "C:\ruta\al\proyecto\venv\Scripts\waitress-serve.exe" --host=127.0.0.1 --port=8100 config.wsgi:application
+   ```
+3. **El `web.config` de IIS** ([`deploy/iis/web.config`](deploy/iis/web.config)), cambia:
+   ```xml
+   <action type="Rewrite" url="http://127.0.0.1:8100/{R:1}" />
+   ```
+
+Y en el firewall de Windows, bloquea hacia afuera el puerto que hayas elegido (8100 en este ejemplo) en vez
+del 8000.
+
+La dirección pública del sistema (el dominio o IP que usa la gente) **no cambia** con esto — sigue siendo la
+de IIS en el puerto 80/443 de siempre; este puerto interno es invisible para cualquiera fuera del servidor.
+
+> Nota: la variable `PORT=8000` del `.env` es algo distinto — solo aplica a `python manage.py runserver` en
+> desarrollo local, y de hecho Django no la lee automáticamente (el puerto de `runserver` se define al
+> escribir el comando, ej. `runserver 9000`). No tiene relación con el puerto interno de Waitress en
+> producción.
+
 ### 5. Base de datos (opcional): pasar de SQLite a PostgreSQL
 
 Si vas a tener varios agentes/clientes usando el sistema al mismo tiempo, conviene cambiar de SQLite a
