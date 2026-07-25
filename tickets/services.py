@@ -1,3 +1,4 @@
+import os
 from io import BytesIO
 
 from django.conf import settings
@@ -5,14 +6,9 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.mail import EmailMessage
 from django.core.validators import validate_email
+from django.template.loader import render_to_string
 from django.utils import timezone
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.platypus import Image as RLImage
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-
-ESTILOS = getSampleStyleSheet()
+from xhtml2pdf import pisa
 
 
 def enviar_correo_bienvenida(usuario, pin):
@@ -75,58 +71,73 @@ def enviar_correo_cambio_password(usuario, pin):
     return True
 
 
-def _texto_a_parrafos(texto):
-    return texto.replace('\n', '<br/>')
+def enviar_correo_actualizacion_soporte(ticket, actualizacion):
+    """Avisa al cliente que soporte respondió/actualizó su ticket."""
+    if not ticket.cliente or not ticket.cliente.email:
+        return False
+
+    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    asunto = f'Actualización en tu ticket #{ticket.id} — {ticket.titulo}'
+    cuerpo = (
+        f'Hola {ticket.cliente.username},\n\n'
+        f'Soporte respondió tu ticket #{ticket.id} ("{ticket.titulo}").\n'
+        f'Estado actual: {ticket.get_estado_display()}\n\n'
+        f'Comentario:\n{actualizacion.comentario}\n\n'
+        f'Puedes ver el detalle completo aquí: {liga}\n\n'
+        f'Saludos,\nEquipo de soporte {settings.NOMBRE_SISTEMA}'
+    )
+    correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, [ticket.cliente.email])
+    correo.send(fail_silently=False)
+    return True
 
 
-def _agregar_imagenes_al_pdf(story, imagenes):
-    for img in imagenes:
-        if img.es_pdf:
-            story.append(Paragraph(f'[Adjunto PDF: {img.nombre_archivo}]', ESTILOS['Normal']))
-            story.append(Spacer(1, 6))
-            continue
-        try:
-            with img.imagen.open('rb') as archivo:
-                contenido = archivo.read()
-            story.append(RLImage(BytesIO(contenido), width=3 * inch, height=2.2 * inch, kind='proportional'))
-            story.append(Spacer(1, 6))
-        except Exception:
-            story.append(Paragraph(f'[No se pudo incluir la imagen: {img.imagen.name}]', ESTILOS['Normal']))
+def enviar_correo_actualizacion_cliente(ticket, actualizacion):
+    """Avisa al equipo de soporte de la empresa que el cliente respondió/comentó."""
+    from .models import Usuario
+
+    destinatarios = list(
+        Usuario.objects.filter(rol=Usuario.Rol.SOPORTE, empresas=ticket.empresa, is_active=True)
+        .exclude(email='')
+        .values_list('email', flat=True)
+        .distinct()
+    )
+    if not destinatarios:
+        return False
+
+    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    asunto = f'{ticket.nombre_cliente} respondió el ticket #{ticket.id} — {ticket.titulo}'
+    cuerpo = (
+        f'Hola,\n\n'
+        f'{ticket.nombre_cliente} agregó un comentario en el ticket #{ticket.id} ("{ticket.titulo}").\n'
+        f'Estado actual: {ticket.get_estado_display()}\n\n'
+        f'Comentario:\n{actualizacion.comentario}\n\n'
+        f'Puedes ver el detalle completo aquí: {liga}\n\n'
+        f'Saludos,\nSistema {settings.NOMBRE_SISTEMA}'
+    )
+    correo = EmailMessage(asunto, cuerpo, settings.DEFAULT_FROM_EMAIL, destinatarios)
+    correo.send(fail_silently=False)
+    return True
+
+
+def _resolver_uri_pdf(uri, rel):
+    """Traduce las URLs de /media/ usadas en el HTML del PDF a rutas de disco,
+    para que xhtml2pdf pueda leer las imágenes directo del filesystem local."""
+    if uri.startswith(settings.MEDIA_URL):
+        return os.path.join(settings.MEDIA_ROOT, uri[len(settings.MEDIA_URL):].lstrip('/'))
+    return uri
 
 
 def generar_pdf_cierre(ticket):
+    contexto = {
+        'ticket': ticket,
+        'historial': ticket.actualizaciones.select_related('autor').order_by('fecha_creacion'),
+        'nombre_sistema': settings.NOMBRE_SISTEMA,
+        'fecha_generacion': timezone.now().strftime('%d/%m/%Y %H:%M'),
+    }
+    html = render_to_string('tickets/pdf_cierre.html', contexto)
+
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    story = []
-
-    story.append(Paragraph(f'Ticket #{ticket.id} — {ticket.titulo}', ESTILOS['Title']))
-    story.append(Paragraph(f'Empresa: {ticket.empresa.nombre}', ESTILOS['Normal']))
-    story.append(Paragraph(
-        f'Cliente: {ticket.cliente.username} ({ticket.cliente.email or "sin correo"})', ESTILOS['Normal']
-    ))
-    story.append(Paragraph(f'Tipo: {ticket.get_tipo_display()}', ESTILOS['Normal']))
-    story.append(Paragraph(f'Fecha de creación: {ticket.fecha_creacion.strftime("%d/%m/%Y %H:%M")}', ESTILOS['Normal']))
-    story.append(Paragraph(f'Fecha de cierre: {timezone.now().strftime("%d/%m/%Y %H:%M")}', ESTILOS['Normal']))
-    story.append(Spacer(1, 12))
-
-    story.append(Paragraph('Descripción original:', ESTILOS['Heading3']))
-    story.append(Paragraph(_texto_a_parrafos(ticket.descripcion), ESTILOS['Normal']))
-    story.append(Spacer(1, 6))
-    _agregar_imagenes_al_pdf(story, ticket.imagenes.all())
-
-    story.append(Spacer(1, 12))
-    story.append(Paragraph('Historial de seguimiento:', ESTILOS['Heading3']))
-    for item in ticket.actualizaciones.select_related('autor').order_by('fecha_creacion'):
-        autor = item.autor.username if item.autor else 'Usuario eliminado'
-        story.append(Paragraph(
-            f'{item.fecha_creacion.strftime("%d/%m/%Y %H:%M")} — {autor} — {item.get_estado_en_ese_momento_display()}',
-            ESTILOS['Heading4']
-        ))
-        story.append(Paragraph(_texto_a_parrafos(item.comentario), ESTILOS['Normal']))
-        _agregar_imagenes_al_pdf(story, item.imagenes.all())
-        story.append(Spacer(1, 8))
-
-    doc.build(story)
+    pisa.CreatePDF(html, dest=buffer, link_callback=_resolver_uri_pdf)
     buffer.seek(0)
     return ContentFile(buffer.read(), name=f'ticket_{ticket.id}_cierre.pdf')
 
@@ -182,6 +193,18 @@ def enviar_correo_cierre(ticket, pdf_bytes):
 
 
 def cerrar_ticket_definitivo(ticket, motivo, cerrado_por=None):
+    # El estado y demás campos de cierre se asignan ANTES de generar el PDF y el
+    # correo, para que ambos reflejen correctamente el motivo, quién cerró y la
+    # fecha de cierre (de lo contrario el PDF/correo se arman con el ticket todavía
+    # "abierto" y sin motivo, ya que get_motivo_cierre_display() lee el valor en
+    # memoria del objeto, no lo que se vaya a guardar después).
+    ticket.estado = ticket.Estado.CERRADO
+    ticket.motivo_cierre = motivo
+    ticket.cerrado_por = cerrado_por
+    ticket.fecha_cierre = timezone.now()
+    ticket.fecha_limite_confirmacion = None
+    ticket.requiere_atencion = False
+
     pdf_file = generar_pdf_cierre(ticket)
     pdf_bytes = pdf_file.read()
     pdf_file.seek(0)
@@ -193,12 +216,6 @@ def cerrar_ticket_definitivo(ticket, motivo, cerrado_por=None):
     except Exception:
         correo_enviado = False
 
-    ticket.estado = ticket.Estado.CERRADO
-    ticket.motivo_cierre = motivo
-    ticket.cerrado_por = cerrado_por
-    ticket.fecha_cierre = timezone.now()
-    ticket.fecha_limite_confirmacion = None
-    ticket.requiere_atencion = False
     ticket.save()
 
     return ticket, correo_enviado
