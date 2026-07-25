@@ -8,11 +8,12 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse, JsonResponse
+from django.db.models import Q
 from .forms import CrearUsuarioForm, EmpresaForm
 from .models import Usuario, Empresa
 from .models import Usuario, Empresa, Ticket
 from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm, CambiarPasswordForm
-from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen
+from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen, SolicitudRestablecimiento
 from .validators import validar_archivos_adjuntos
 from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento, enviar_correo_cambio_password
 from .utils import generar_pin, dato_reservado_para_protegido
@@ -20,6 +21,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 DIAS_LIMITE_CONFIRMACION = 3
+LIMITE_RESTABLECIMIENTOS_DIA = 3
 COLUMNAS_PLANTILLA_USUARIOS = ['username', 'email', 'telefono', 'rol', 'empresas']
 
 
@@ -322,6 +324,56 @@ def lista_usuarios(request):
         'roles_disponibles': Usuario.Rol.choices,
         'roles_filtro': roles_filtro,
         'empresas_filtro_ids': empresas_filtro_ids,
+    })
+
+
+def olvide_password(request):
+    if request.method == 'POST':
+        identificador = request.POST.get('identificador', '').strip()
+        usuario = Usuario.objects.filter(
+            Q(username__iexact=identificador) | Q(email__iexact=identificador)
+        ).order_by('id').first()
+
+        mensaje_generico = (
+            'Si el usuario o correo existe, se envió un correo con la nueva contraseña.'
+        )
+
+        if not identificador:
+            messages.error(request, 'Ingresa tu usuario o correo electrónico.')
+            return redirect('olvide_password')
+
+        if usuario and not usuario.protegido and usuario.is_active:
+            inicio_dia = timezone.localtime(timezone.now()).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            solicitudes_hoy = SolicitudRestablecimiento.objects.filter(
+                usuario=usuario, fecha_creacion__gte=inicio_dia
+            ).count()
+
+            if solicitudes_hoy >= LIMITE_RESTABLECIMIENTOS_DIA:
+                messages.error(
+                    request,
+                    f'Ya alcanzaste el máximo de {LIMITE_RESTABLECIMIENTOS_DIA} '
+                    'restablecimientos de contraseña por día. Intenta de nuevo mañana '
+                    'o contacta a soporte.'
+                )
+                return redirect('olvide_password')
+
+            nueva_password = generar_pin()
+            usuario.password = make_password(nueva_password)
+            usuario.save()
+            SolicitudRestablecimiento.objects.create(usuario=usuario)
+
+            try:
+                enviar_correo_restablecimiento(usuario, nueva_password)
+            except Exception:
+                pass
+
+        messages.success(request, mensaje_generico)
+        return redirect('login')
+
+    return render(request, 'tickets/olvide_password.html', {
+        'limite_restablecimientos': LIMITE_RESTABLECIMIENTOS_DIA,
     })
 
 
