@@ -63,6 +63,9 @@ def inicio(request):
 def ayuda(request):
     return render(request, 'tickets/ayuda.html')
 
+def centro_ayuda(request):
+    return render(request, 'tickets/centro_ayuda.html')
+
 def puede_crear_usuarios(user):
     if not user.is_authenticated:
         return False

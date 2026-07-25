@@ -220,6 +220,49 @@
             transition: opacity 0.6s ease;
         }
 
+        .flujo-visual {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 15px 0 20px 0;
+            padding: 20px 10px;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .paso-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 92px;
+            text-align: center;
+        }
+
+        .icono-circulo {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .paso-visual span {
+            font-size: 11.5px;
+            color: #2c3e50;
+            line-height: 1.3;
+        }
+
+        .flecha-visual {
+            font-size: 20px;
+            color: #bbb;
+            margin-top: 17px;
+        }
+
         .mensaje.success {
             background-color: #d4edda;
             color: #155724;
@@ -238,7 +281,7 @@
             <h1><a href="{% url 'inicio' %}" style="color:inherit; text-decoration:none;">{{ nombre_sistema }}</a></h1>
             <div class="reloj" id="reloj"></div>
             <div class="version-sistema">{{ version_sistema }}</div>
-            <a href="{% url 'ayuda' %}" class="boton-secundario" style="display:inline-block; margin-top:8px; font-size:12px; padding:5px 12px;">¿Qué hago? ¿Cómo funciono?</a>
+            <a href="{% url 'centro_ayuda' %}" class="boton-secundario" style="display:inline-block; margin-top:8px; font-size:12px; padding:5px 12px;">📚 Centro de ayuda</a>
         </div>
         {% include 'tickets/_barra_usuario.html' %}
     </header>
@@ -254,6 +297,38 @@
             {% endif %}
 
             <p>Aquí vas a poder crear y gestionar tus tickets de soporte.</p>
+
+            <div class="flujo-visual">
+                <div class="paso-visual">
+                    <div class="icono-circulo" style="background-color:#2980b9;">📝</div>
+                    <span>Levantas el ticket</span>
+                </div>
+                <div class="flecha-visual">→</div>
+                <div class="paso-visual">
+                    <div class="icono-circulo" style="background-color:#e67e22;">🔧</div>
+                    <span>Soporte atiende</span>
+                </div>
+                <div class="flecha-visual">→</div>
+                <div class="paso-visual">
+                    <div class="icono-circulo" style="background-color:#f1c40f;">✅</div>
+                    <span>Marcado resuelto</span>
+                </div>
+                <div class="flecha-visual">→</div>
+                <div class="paso-visual">
+                    <div class="icono-circulo" style="background-color:#9b59b6;">👤</div>
+                    <span>Tú confirmas</span>
+                </div>
+                <div class="flecha-visual">→</div>
+                <div class="paso-visual">
+                    <div class="icono-circulo" style="background-color:#16a085;">📄</div>
+                    <span>Cierre + PDF por correo</span>
+                </div>
+                <div class="flecha-visual">↻</div>
+                <div class="paso-visual">
+                    <div class="icono-circulo" style="background-color:#7f8c8d;">🔁</div>
+                    <span>Reabrir si hace falta</span>
+                </div>
+            </div>
 
             {% if not user.is_authenticated %}
             <p>Debes iniciar sesión para continuar.</p>
