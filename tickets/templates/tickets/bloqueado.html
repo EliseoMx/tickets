@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Acceso bloqueado - {{ nombre_sistema }}</title>
     <style>
         body {
@@ -45,6 +46,13 @@
             margin-top: 15px;
             color: #2980b9;
             text-decoration: none;
+        }
+
+        @media (max-width: 600px) {
+            .contenedor {
+                margin: 20px 12px;
+                padding: 20px;
+            }
         }
     </style>
 </head>
