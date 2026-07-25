@@ -15,7 +15,7 @@ from .models import Usuario, Empresa, Ticket
 from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm, CambiarPasswordForm
 from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen, SolicitudRestablecimiento
 from .validators import validar_archivos_adjuntos
-from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento, enviar_correo_cambio_password
+from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento, enviar_correo_cambio_password, enviar_correo_actualizacion_soporte, enviar_correo_actualizacion_cliente
 from .utils import generar_pin, dato_reservado_para_protegido
 from django.utils import timezone
 from datetime import timedelta
@@ -789,6 +789,12 @@ def atender_ticket(request, ticket_id):
                 messages.success(request, f'Actualización registrada en el ticket #{ticket.id}.')
 
             ticket.save()
+
+            try:
+                enviar_correo_actualizacion_soporte(ticket, actualizacion)
+            except Exception:
+                pass
+
             return redirect('bandeja_tickets')
         else:
             for error in errores_imagenes:
@@ -1056,6 +1062,11 @@ def ver_ticket_cliente(request, ticket_id):
 
             ticket.requiere_atencion = True
             ticket.save()
+
+            try:
+                enviar_correo_actualizacion_cliente(ticket, comentario)
+            except Exception:
+                pass
 
             messages.success(request, 'Tu comentario fue agregado.')
             return redirect('ver_ticket_cliente', ticket_id=ticket.id)

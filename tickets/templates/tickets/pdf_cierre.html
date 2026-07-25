@@ -1,0 +1,265 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: letter;
+            margin: 2cm 1.5cm;
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #2c2c2c;
+            font-size: 11px;
+        }
+
+        .header-pdf {
+            background-color: #2c3e50;
+            color: white;
+            padding: 14px 18px;
+            border-radius: 6px;
+            margin-bottom: 14px;
+        }
+
+        .header-pdf h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .header-pdf .subtitulo {
+            font-size: 10px;
+            color: #d5dbe0;
+            margin-top: 4px;
+        }
+
+        h2.titulo-ticket {
+            color: #2c3e50;
+            font-size: 15px;
+            margin: 0 0 6px 0;
+        }
+
+        .etiqueta {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .estado-abierto {
+            background-color: #b9770e;
+        }
+
+        .estado-en_proceso {
+            background-color: #2980b9;
+        }
+
+        .estado-cerrado {
+            background-color: #17a589;
+        }
+
+        .estado-pendiente_confirmacion {
+            background-color: #b7950b;
+        }
+
+        .detalle {
+            margin-top: 10px;
+        }
+
+        .detalle p {
+            margin: 4px 0;
+        }
+
+        .descripcion {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #cccccc;
+            margin: 16px 0;
+        }
+
+        h3.seccion {
+            color: #2c3e50;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .historial-item {
+            border: 1px solid #e0e0e0;
+            border-left: 3px solid #2980b9;
+            background-color: #f9f9f9;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
+            page-break-inside: avoid;
+        }
+
+        .historial-item.es-cliente {
+            border-left-color: #27ae60;
+            background-color: #f2faf5;
+        }
+
+        .historial-meta {
+            font-size: 9px;
+            color: #777777;
+            margin-bottom: 4px;
+        }
+
+        .autor-tag {
+            display: inline-block;
+            padding: 1px 7px;
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .autor-agente {
+            background-color: #2980b9;
+        }
+
+        .autor-cliente {
+            background-color: #27ae60;
+        }
+
+        table.imagenes-adjuntas {
+            margin-top: 6px;
+            border-collapse: collapse;
+        }
+
+        table.imagenes-adjuntas td {
+            padding: 0 0 5px 0;
+        }
+
+        .adjunto-img {
+            width: 140px;
+            height: 100px;
+            border: 1px solid #dddddd;
+        }
+
+        .adjunto-pdf-txt {
+            display: inline-block;
+            background-color: #eaf2f8;
+            color: #2980b9;
+            border: 1px solid #cfe2f3;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 9px;
+        }
+
+        .aviso-cerrado {
+            background-color: #fdecea;
+            color: #922b21;
+            border: 1px solid #f5c6cb;
+            padding: 10px 12px;
+            border-radius: 4px;
+            margin-top: 16px;
+            font-size: 10px;
+        }
+
+        .pie {
+            margin-top: 20px;
+            font-size: 9px;
+            color: #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-pdf">
+        <h1>{{ nombre_sistema }}</h1>
+        <div class="subtitulo">Historial completo del ticket — generado el {{ fecha_generacion }}</div>
+    </div>
+
+    <h2 class="titulo-ticket">
+        Ticket #{{ ticket.id }} &mdash; {{ ticket.titulo }}
+        &nbsp;<span class="etiqueta estado-{{ ticket.estado }}">{{ ticket.get_estado_display }}</span>
+    </h2>
+
+    <div class="detalle">
+        <p><b>Empresa:</b> {{ ticket.nombre_empresa }}</p>
+        <p><b>Cliente:</b> {{ ticket.nombre_cliente }}</p>
+        <p><b>Tipo:</b> {{ ticket.get_tipo_display }}</p>
+        <p><b>Fecha de creación:</b> {{ ticket.fecha_creacion|date:"d/m/Y H:i" }}</p>
+        {% if ticket.fecha_cierre %}
+        <p><b>Cerrado por:</b> {{ ticket.cerrado_por.username|default:"—" }}</p>
+        <p><b>Fecha de cierre:</b> {{ ticket.fecha_cierre|date:"d/m/Y H:i" }}</p>
+        {% endif %}
+        <p><b>Descripción original:</b></p>
+        <div class="descripcion">{{ ticket.descripcion|linebreaksbr }}</div>
+        {% if ticket.imagenes.all %}
+        <table class="imagenes-adjuntas">
+            {% for img in ticket.imagenes.all %}
+            <tr>
+                <td>
+                    {% if img.es_pdf %}
+                    <span class="adjunto-pdf-txt">PDF adjunto: {{ img.nombre_archivo }}</span>
+                    {% else %}
+                    <img class="adjunto-img" src="{{ img.imagen.url }}">
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
+
+    <hr>
+
+    <h3 class="seccion">Seguimiento</h3>
+    {% for item in historial %}
+    <div class="historial-item {% if item.autor_id == ticket.cliente_id %}es-cliente{% endif %}">
+        <div class="historial-meta">
+            {{ item.fecha_creacion|date:"d/m/Y H:i" }} &mdash;
+            {{ item.autor.username|default:"Usuario eliminado" }}
+            {% if item.autor_id == ticket.cliente_id %}
+            <span class="autor-tag autor-cliente">Cliente</span>
+            {% else %}
+            <span class="autor-tag autor-agente">Soporte</span>
+            {% endif %}
+            &mdash;
+            <span class="etiqueta estado-{{ item.estado_en_ese_momento }}">{{ item.get_estado_en_ese_momento_display }}</span>
+        </div>
+        <div>{{ item.comentario|linebreaksbr }}</div>
+        {% if item.imagenes.all %}
+        <table class="imagenes-adjuntas">
+            {% for img in item.imagenes.all %}
+            <tr>
+                <td>
+                    {% if img.es_pdf %}
+                    <span class="adjunto-pdf-txt">PDF adjunto: {{ img.nombre_archivo }}</span>
+                    {% else %}
+                    <img class="adjunto-img" src="{{ img.imagen.url }}">
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p style="color:#888888;">Todavía no hay actualizaciones registradas.</p>
+    {% endfor %}
+
+    {% if ticket.estado == 'cerrado' %}
+    <div class="aviso-cerrado">
+        Este ticket quedó cerrado.
+        {% if ticket.motivo_cierre %}Motivo: {{ ticket.get_motivo_cierre_display }}.{% endif %}
+        {% if ticket.cerrado_por %}Cerrado por: {{ ticket.cerrado_por.username }}.{% endif %}
+        {% if ticket.fecha_cierre %}Fecha de cierre: {{ ticket.fecha_cierre|date:"d/m/Y H:i" }}.{% endif %}
+    </div>
+    {% endif %}
+
+    <div class="pie">Documento generado automáticamente por {{ nombre_sistema }}.</div>
+</body>
+
+</html>
