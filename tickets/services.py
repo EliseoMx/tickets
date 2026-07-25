@@ -1,6 +1,5 @@
 from io import BytesIO
 
-import requests
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
@@ -12,8 +11,6 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import Image as RLImage
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-
-from .models import TicketImagen
 
 ESTILOS = getSampleStyleSheet()
 
@@ -85,13 +82,13 @@ def _texto_a_parrafos(texto):
 def _agregar_imagenes_al_pdf(story, imagenes):
     for img in imagenes:
         if img.es_pdf:
-            story.append(Paragraph(f'[Adjunto PDF: {img.nombre_archivo} — {img.imagen.url}]', ESTILOS['Normal']))
+            story.append(Paragraph(f'[Adjunto PDF: {img.nombre_archivo}]', ESTILOS['Normal']))
             story.append(Spacer(1, 6))
             continue
         try:
-            respuesta = requests.get(img.imagen.url, timeout=15)
-            respuesta.raise_for_status()
-            story.append(RLImage(BytesIO(respuesta.content), width=3 * inch, height=2.2 * inch, kind='proportional'))
+            with img.imagen.open('rb') as archivo:
+                contenido = archivo.read()
+            story.append(RLImage(BytesIO(contenido), width=3 * inch, height=2.2 * inch, kind='proportional'))
             story.append(Spacer(1, 6))
         except Exception:
             story.append(Paragraph(f'[No se pudo incluir la imagen: {img.imagen.name}]', ESTILOS['Normal']))
@@ -184,14 +181,6 @@ def enviar_correo_cierre(ticket, pdf_bytes):
     return True
 
 
-def _eliminar_imagenes_del_ticket(ticket):
-    imagenes = list(TicketImagen.objects.filter(ticket=ticket)) + \
-        list(TicketImagen.objects.filter(actualizacion__ticket=ticket))
-    for img in imagenes:
-        img.imagen.delete(save=False)
-        img.delete()
-
-
 def cerrar_ticket_definitivo(ticket, motivo, cerrado_por=None):
     pdf_file = generar_pdf_cierre(ticket)
     pdf_bytes = pdf_file.read()
@@ -203,8 +192,6 @@ def cerrar_ticket_definitivo(ticket, motivo, cerrado_por=None):
         correo_enviado = enviar_correo_cierre(ticket, pdf_bytes)
     except Exception:
         correo_enviado = False
-
-    _eliminar_imagenes_del_ticket(ticket)
 
     ticket.estado = ticket.Estado.CERRADO
     ticket.motivo_cierre = motivo

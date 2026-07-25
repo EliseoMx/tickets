@@ -1,7 +1,6 @@
 import csv
 import io
-
-import requests
+import mimetypes
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -964,13 +963,11 @@ def descargar_adjunto(request, imagen_id):
         messages.error(request, 'No tienes acceso a este archivo.')
         return redirect('inicio')
 
-    respuesta_externa = requests.get(adjunto.imagen.url, timeout=15)
-    respuesta_externa.raise_for_status()
-
-    content_type = 'application/pdf' if adjunto.es_pdf else respuesta_externa.headers.get(
-        'content-type', 'application/octet-stream'
+    content_type = 'application/pdf' if adjunto.es_pdf else (
+        mimetypes.guess_type(adjunto.nombre_archivo)[0] or 'application/octet-stream'
     )
-    respuesta = HttpResponse(respuesta_externa.content, content_type=content_type)
+    with adjunto.imagen.open('rb') as archivo:
+        respuesta = HttpResponse(archivo.read(), content_type=content_type)
     respuesta['Content-Disposition'] = f'attachment; filename="{adjunto.nombre_archivo}"'
     return respuesta
 

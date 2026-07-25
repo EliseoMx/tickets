@@ -44,9 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'cloudinary_storage',
     'django.contrib.staticfiles',
-    'cloudinary',
     'axes',
     'tickets',
 ]
@@ -166,26 +164,19 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-# Archivos que se guardan en el propio servidor (ej. logos de empresa), no en Cloudinary
+# Todos los archivos (logos de empresa, imágenes/PDFs de tickets) se guardan en el
+# propio servidor, dentro de MEDIA_ROOT, para conservarlos permanentemente.
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Archivos subidos por usuarios (imágenes de tickets) -> Cloudinary
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
 STORAGES = {
     'default': {
-        'BACKEND': 'cloudinary_storage.storage.MediaCloudinaryStorage',
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
     'staticfiles': {
         'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
     },
 }
-# django-cloudinary-storage todavía revisa este ajuste "clásico" (pre-STORAGES) en su
-# propio comando collectstatic; debe coincidir con STORAGES['staticfiles']['BACKEND'].
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Envío de correos (aviso de cierre de tickets) vía Gmail SMTP

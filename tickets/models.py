@@ -3,17 +3,33 @@ import os
 from django.contrib.auth.models import AbstractUser
 from django.core.files.storage import FileSystemStorage
 from django.db import models
-from cloudinary_storage.storage import RawMediaCloudinaryStorage
+from django.utils.text import slugify
 
-from .storage import AdjuntoTicketStorage
+from .storage import AdjuntoTicketStorage, generar_nombre_unico
+
+
+def _carpeta_empresa(empresa):
+    if not empresa:
+        return 'sin_empresa'
+    return f'{empresa.id}-{slugify(empresa.nombre) or "empresa"}'
 
 
 def ruta_adjunto_ticket(instance, filename):
-    """PDFs van a una carpeta aparte: así el storage puede saber si debe subirlos
-    como recurso 'raw' (para que se descarguen) sin depender de la extensión, que
-    Cloudinary no conserva en el nombre guardado."""
-    carpeta = 'tickets/pdf' if filename.lower().endswith('.pdf') else 'tickets'
-    return f'{carpeta}/{filename}'
+    """Guarda cada adjunto en una carpeta por empresa y ticket, para que sea facil
+    ubicarlos a mano en el servidor: tickets/<empresa>/<ticket_id>/adjuntos/<archivo>.
+    El nombre del archivo se genera con generar_nombre_unico (fecha/hora completa +
+    identificador unico) para que nunca se puedan pisar dos archivos entre si."""
+    ticket = instance.ticket or (instance.actualizacion.ticket if instance.actualizacion else None)
+    carpeta_empresa = _carpeta_empresa(ticket.empresa if ticket else None)
+    ticket_id = ticket.id if ticket else 'sin_ticket'
+    return f'tickets/{carpeta_empresa}/{ticket_id}/adjuntos/{generar_nombre_unico(filename)}'
+
+
+def ruta_pdf_cierre(instance, filename):
+    """Igual que ruta_adjunto_ticket, pero para el PDF de cierre del propio ticket:
+    tickets/<empresa>/<ticket_id>/cierre/<archivo>."""
+    carpeta_empresa = _carpeta_empresa(instance.empresa)
+    return f'tickets/{carpeta_empresa}/{instance.id}/cierre/{generar_nombre_unico(filename)}'
 
 
 class Empresa(models.Model):
@@ -21,7 +37,7 @@ class Empresa(models.Model):
     descripcion = models.CharField(max_length=255, blank=True)
     logo = models.ImageField(
         upload_to='empresas/', null=True, blank=True, storage=FileSystemStorage(),
-        help_text='Se guarda en el propio servidor (no en Cloudinary), ya que son pocas imágenes y ligeras'
+        help_text='Se guarda en el propio servidor'
     )
     activa = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -120,7 +136,7 @@ class Ticket(models.Model):
     )
     motivo_cierre = models.CharField(max_length=20, choices=MotivoCierre.choices, null=True, blank=True)
     pdf_cierre = models.FileField(
-        upload_to='cierres/', null=True, blank=True, storage=RawMediaCloudinaryStorage()
+        upload_to=ruta_pdf_cierre, null=True, blank=True, storage=AdjuntoTicketStorage()
     )
     requiere_atencion = models.BooleanField(default=False)
     requiere_atencion_cliente = models.BooleanField(
@@ -170,7 +186,7 @@ class TicketImagen(models.Model):
     imagen = models.FileField(upload_to=ruta_adjunto_ticket, storage=AdjuntoTicketStorage())
     nombre_original = models.CharField(
         max_length=255, blank=True,
-        help_text='Nombre del archivo tal como lo subió el usuario (Cloudinary no conserva la extensión)'
+        help_text='Nombre del archivo tal como lo subió el usuario'
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
