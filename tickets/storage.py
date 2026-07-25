@@ -1,23 +1,35 @@
 import os
+import uuid
 
-from cloudinary_storage.storage import MediaCloudinaryStorage, RESOURCE_TYPES
+from django.core.files.storage import FileSystemStorage
+from django.utils import timezone
 
 
-class AdjuntoTicketStorage(MediaCloudinaryStorage):
-    """Imágenes se suben como resource_type 'image'; PDFs como 'raw' para que se
-    descarguen tal cual en vez de que Cloudinary intente procesarlos como imagen.
+def generar_nombre_unico(nombre_original):
+    """Genera un nombre de archivo único: fecha y hora completas (con microsegundos,
+    para que dos archivos no puedan coincidir aunque se suban en el mismo segundo)
+    más un identificador aleatorio, conservando la extensión original."""
+    extension = os.path.splitext(nombre_original)[1].lower()
+    momento = timezone.now().strftime('%Y%m%d_%H%M%S_%f')
+    identificador = uuid.uuid4().hex[:12]
+    return f'{momento}_{identificador}{extension}'
 
-    Cloudinary bloquea por seguridad la entrega de archivos 'raw' cuyo identificador
-    termina en una extensión reconocida (ej. .pdf), así que quitamos la extensión
-    antes de subir; el tipo se detecta luego por la carpeta ('tickets/pdf/...'),
-    no por la extensión, ya que esta no sobrevive la subida.
+
+class AdjuntoTicketStorage(FileSystemStorage):
+    """Guarda adjuntos de tickets (imágenes y PDFs) en el disco del propio servidor,
+    para conservarlos permanentemente como referencia (nunca se borran).
+
+    El nombre del archivo ya viene generado con fecha/hora completa + identificador
+    único (ver generar_nombre_unico), pero aquí se valida explícitamente que no
+    exista ya un archivo con ese nombre antes de guardar — si por alguna razón
+    coincidiera (dos subidas en el mismo microsegundo con el mismo identificador
+    aleatorio), se genera uno nuevo hasta encontrar un nombre libre.
     """
 
-    def _get_resource_type(self, name):
-        if '/pdf/' in name.replace('\\', '/'):
-            return RESOURCE_TYPES['RAW']
-        return RESOURCE_TYPES['IMAGE']
-
-    def _save(self, name, content):
-        base, _extension = os.path.splitext(name)
-        return super()._save(base, content)
+    def get_available_name(self, name, max_length=None):
+        while self.exists(name):
+            directorio, archivo = os.path.split(name)
+            base, extension = os.path.splitext(archivo)
+            archivo_nuevo = f'{base}_{uuid.uuid4().hex[:8]}{extension}'
+            name = os.path.join(directorio, archivo_nuevo)
+        return name
