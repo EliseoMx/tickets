@@ -73,6 +73,21 @@ class Usuario(AbstractUser):
     def __str__(self):
         return f"{self.username} ({self.get_rol_display()})"
 
+
+class SolicitudRestablecimiento(models.Model):
+    """Registro de cada restablecimiento de contraseña autoservicio (¿Olvidaste tu
+    contraseña?), para poder limitar cuántas veces al día lo puede usar un mismo usuario."""
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='solicitudes_restablecimiento')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Solicitud de restablecimiento de contraseña'
+        verbose_name_plural = 'Solicitudes de restablecimiento de contraseña'
+
+    def __str__(self):
+        return f"Restablecimiento de {self.usuario.username} — {self.fecha_creacion}"
+
+
 class Ticket(models.Model):
     class Tipo(models.TextChoices):
         INCIDENTE = 'incidente', 'Incidente'
