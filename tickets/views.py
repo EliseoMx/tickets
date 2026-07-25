@@ -1,6 +1,7 @@
 import csv
 import io
 import mimetypes
+from datetime import timedelta
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -9,16 +10,13 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.http import HttpResponse, JsonResponse
 from django.db.models import Q
-from .forms import CrearUsuarioForm, EmpresaForm
-from .models import Usuario, Empresa
-from .models import Usuario, Empresa, Ticket
+from django.utils import timezone
+
 from .forms import CrearUsuarioForm, EmpresaForm, EditarEmpresasForm, TicketForm, ActualizacionTicketForm, ComentarioClienteForm, CambiarPasswordForm
 from .models import Usuario, Empresa, Ticket, TicketActualizacion, TicketImagen, SolicitudRestablecimiento
 from .validators import validar_archivos_adjuntos
 from .services import cerrar_ticket_definitivo, cerrar_tickets_vencidos, enviar_correo_bienvenida, enviar_correo_restablecimiento, enviar_correo_cambio_password, enviar_correo_actualizacion_soporte, enviar_correo_actualizacion_cliente
 from .utils import generar_pin, dato_reservado_para_protegido
-from django.utils import timezone
-from datetime import timedelta
 
 DIAS_LIMITE_CONFIRMACION = 3
 LIMITE_RESTABLECIMIENTOS_DIA = 3
@@ -802,7 +800,7 @@ def atender_ticket(request, ticket_id):
     else:
         form = ActualizacionTicketForm(initial={'estado_en_ese_momento': ticket.estado})
 
-    historial = ticket.actualizaciones.select_related('autor').all()
+    historial = ticket.actualizaciones.select_related('autor').prefetch_related('imagenes').all()
     return render(request, 'tickets/atender_ticket.html', {
         'ticket': ticket,
         'form': form,
@@ -828,6 +826,11 @@ def reabrir_ticket(request, ticket_id):
         return redirect('atender_ticket', ticket_id=ticket.id)
 
     if request.method == 'POST':
+        # No se toca ticket.pdf_cierre aquí a propósito: si el ticket se vuelve a
+        # cerrar más adelante se generará un PDF nuevo que reemplaza la referencia
+        # en este campo, pero el PDF de este cierre anterior sigue existiendo en
+        # el disco (el almacenamiento local nunca borra archivos), solo que deja
+        # de estar enlazado desde la interfaz.
         ticket.estado = Ticket.Estado.EN_PROCESO
         ticket.cerrado_por = None
         ticket.fecha_cierre = None
@@ -932,7 +935,6 @@ def eliminar_empresa(request, empresa_id):
         return redirect('lista_empresas')
 
     if request.method == 'POST':
-        from django.utils import timezone
         ahora = timezone.now()
 
         nombre_original = empresa.nombre
@@ -1076,7 +1078,7 @@ def ver_ticket_cliente(request, ticket_id):
     else:
         form = ComentarioClienteForm()
 
-    historial = ticket.actualizaciones.select_related('autor').all()
+    historial = ticket.actualizaciones.select_related('autor').prefetch_related('imagenes').all()
     return render(request, 'tickets/ver_ticket_cliente.html', {
         'ticket': ticket,
         'form': form,

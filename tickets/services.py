@@ -130,7 +130,7 @@ def _resolver_uri_pdf(uri, rel):
 def generar_pdf_cierre(ticket):
     contexto = {
         'ticket': ticket,
-        'historial': ticket.actualizaciones.select_related('autor').order_by('fecha_creacion'),
+        'historial': ticket.actualizaciones.select_related('autor').prefetch_related('imagenes').order_by('fecha_creacion'),
         'nombre_sistema': settings.NOMBRE_SISTEMA,
         'fecha_generacion': timezone.now().strftime('%d/%m/%Y %H:%M'),
     }
@@ -160,7 +160,7 @@ def _es_email_valido(valor):
 
 def enviar_correo_cierre(ticket, pdf_bytes):
     destinatarios = []
-    if ticket.cliente.email:
+    if ticket.cliente and ticket.cliente.email:
         destinatarios.append(ticket.cliente.email)
 
     agente = _agente_relacionado(ticket)
@@ -179,7 +179,7 @@ def enviar_correo_cierre(ticket, pdf_bytes):
     asunto = f'Ticket #{ticket.id} cerrado — {ticket.titulo}'
     cuerpo = (
         f'Hola,\n\n'
-        f'El ticket #{ticket.id} ("{ticket.titulo}") de {ticket.cliente.username} ha sido cerrado.\n'
+        f'El ticket #{ticket.id} ("{ticket.titulo}") de {ticket.nombre_cliente} ha sido cerrado.\n'
         f'Motivo: {ticket.get_motivo_cierre_display()}\n\n'
         'Adjuntamos un PDF con el historial completo de la atención.\n\n'
         f'Saludos,\nEquipo de soporte {settings.NOMBRE_SISTEMA}'

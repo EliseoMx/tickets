@@ -13,5 +13,12 @@ class UsuarioAdmin(UserAdmin):
     list_display = ('username', 'email', 'rol', 'is_staff', 'is_active')
     list_filter = ('rol', 'is_staff', 'is_active')
 
+    def has_delete_permission(self, request, obj=None):
+        # Borrar un usuario aquí saltaría la limpieza de tickets (cerrarlos,
+        # guardar cliente_eliminado_nombre) que hace la vista
+        # eliminar_usuario_permanente. Ese es el único lugar permitido para
+        # eliminar usuarios definitivamente.
+        return False
+
 
 admin.site.register(Usuario, UsuarioAdmin)

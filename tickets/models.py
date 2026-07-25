@@ -36,7 +36,7 @@ class Empresa(models.Model):
     nombre = models.CharField(max_length=150, unique=True)
     descripcion = models.CharField(max_length=255, blank=True)
     logo = models.ImageField(
-        upload_to='empresas/', null=True, blank=True, storage=FileSystemStorage(),
+        upload_to='empresas/', null=True, blank=True, max_length=255, storage=FileSystemStorage(),
         help_text='Se guarda en el propio servidor'
     )
     activa = models.BooleanField(default=True)
@@ -151,7 +151,7 @@ class Ticket(models.Model):
     )
     motivo_cierre = models.CharField(max_length=20, choices=MotivoCierre.choices, null=True, blank=True)
     pdf_cierre = models.FileField(
-        upload_to=ruta_pdf_cierre, null=True, blank=True, storage=AdjuntoTicketStorage()
+        upload_to=ruta_pdf_cierre, null=True, blank=True, max_length=255, storage=AdjuntoTicketStorage()
     )
     requiere_atencion = models.BooleanField(default=False)
     requiere_atencion_cliente = models.BooleanField(
@@ -198,7 +198,7 @@ class TicketImagen(models.Model):
     actualizacion = models.ForeignKey(
         TicketActualizacion, on_delete=models.CASCADE, null=True, blank=True, related_name='imagenes'
     )
-    imagen = models.FileField(upload_to=ruta_adjunto_ticket, storage=AdjuntoTicketStorage())
+    imagen = models.FileField(upload_to=ruta_adjunto_ticket, max_length=255, storage=AdjuntoTicketStorage())
     nombre_original = models.CharField(
         max_length=255, blank=True,
         help_text='Nombre del archivo tal como lo subió el usuario'
