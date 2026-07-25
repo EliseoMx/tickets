@@ -74,6 +74,15 @@
             margin-top: 15px;
         }
 
+        .centro-ayuda-link {
+            display: block;
+            text-align: center;
+            margin-top: 18px;
+            color: #2980b9;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
         .mensaje {
             padding: 12px;
             border-radius: 5px;
@@ -122,6 +131,7 @@
 
             <button type="submit" class="boton">Entrar</button>
         </form>
+        <a href="{% url 'centro_ayuda' %}" class="centro-ayuda-link">📚 Centro de ayuda — ¿cómo funciona el sistema?</a>
     </div>
 
     <script>

@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Centro de ayuda - {{ nombre_sistema }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .boton-secundario {
+            background-color: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .boton-link {
+            background: transparent;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .boton-notificacion {
+            position: relative;
+            margin-right: 15px;
+        }
+
+        .badge {
+            background-color: #e74c3c;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 7px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .badge-cliente {
+            background-color: #27ae60;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .reloj {
+            font-size: 12px;
+            margin-top: 4px;
+            opacity: 0.85;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .version-sistema {
+            font-size: 11px;
+            opacity: 0.6;
+            margin-top: 2px;
+        }
+
+        .contenedor {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .encabezado-centro {
+            background: white;
+            padding: 30px 35px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+
+        .encabezado-centro h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .buscador-ayuda {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 16px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+
+        .buscador-ayuda:focus {
+            outline: 2px solid #2980b9;
+            border-color: #2980b9;
+        }
+
+        /* --- Tarjetas de sección (como las tarjetas de empresa) --- */
+        .grid-secciones {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        @media (max-width: 720px) {
+            .grid-secciones {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .grid-secciones {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .tarjeta-seccion {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 28px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            border: 2px solid transparent;
+        }
+
+        .tarjeta-seccion:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .tarjeta-seccion.activa {
+            border-color: #2980b9;
+        }
+
+        .icono-seccion {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 12px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+        }
+
+        .tarjeta-seccion h3 {
+            margin: 0 0 4px 0;
+            font-size: 15px;
+            color: #2c3e50;
+        }
+
+        .tarjeta-seccion p {
+            margin: 0;
+            font-size: 12px;
+            color: #888;
+        }
+
+        /* --- Panel dividido: mitad tarjetas / mitad explicación --- */
+        .panel-split {
+            display: none;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .barra-split {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .barra-split h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .cerrar-split {
+            display: inline-block;
+            background-color: #7f8c8d;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            white-space: nowrap;
+            padding: 10px 20px;
+            border-radius: 6px;
+            transition: background-color 0.15s;
+        }
+
+        .cerrar-split:hover {
+            background-color: #6b7778;
+        }
+
+        .mitad-tarjetas {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 65vh;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .tarjeta-tutorial-mini {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            padding: 14px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .tarjeta-tutorial-mini:hover {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+        }
+
+        .tarjeta-tutorial-mini.activa {
+            border-color: #2980b9;
+            background: #eaf2f8;
+        }
+
+        .icono-mini {
+            font-size: 18px;
+        }
+
+        .tarjeta-tutorial-mini h4 {
+            margin: 0 0 3px 0;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .tarjeta-tutorial-mini p {
+            margin: 0;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .mitad-explicacion {
+            flex: 1;
+            min-width: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            padding: 26px 28px;
+            max-height: 65vh;
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+        }
+
+        .encabezado-explicacion {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .encabezado-explicacion .icono-explicacion {
+            font-size: 26px;
+        }
+
+        .encabezado-explicacion h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .mitad-explicacion ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .mitad-explicacion li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .mitad-explicacion .nota {
+            background: #eaf2f8;
+            border-radius: 6px;
+            padding: 10px 14px;
+            font-size: 13px;
+            color: #2c3e50;
+            margin-top: 14px;
+        }
+
+        .placeholder-explicacion {
+            color: #999;
+            font-style: italic;
+        }
+
+        .sin-resultados-split {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 720px) {
+            .panel-split {
+                flex-direction: column;
+            }
+
+            .mitad-explicacion {
+                position: static;
+                max-height: none;
+            }
+
+            .mitad-tarjetas {
+                max-height: none;
+                overflow-y: visible;
+            }
+        }
+
+        .volver {
+            display: inline-block;
+            margin: 25px 0 30px 0;
+            color: #2980b9;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div>
+            <h1><a href="{% url 'inicio' %}" style="color:inherit; text-decoration:none;">{{ nombre_sistema }}</a></h1>
+            <div class="reloj" id="reloj"></div>
+            <div class="version-sistema">{{ version_sistema }}</div>
+        </div>
+        {% include 'tickets/_barra_usuario.html' %}
+    </header>
+
+    <div class="contenedor">
+        <div class="encabezado-centro">
+            <h2>📚 Centro de ayuda</h2>
+            <p>Elige un tema, o busca por palabra clave, título o tema.</p>
+            <input type="text" id="buscador-ayuda" class="buscador-ayuda" placeholder="Ej. crear usuario, logo de empresa, exportar, contraseña...">
+        </div>
+
+        <div class="grid-secciones" id="grid-secciones"></div>
+
+        <div class="panel-split" id="panel-split">
+            <div style="flex-basis:100%;">
+                <div class="barra-split">
+                    <h3 id="titulo-split"></h3>
+                    <a class="cerrar-split" id="cerrar-split">✕ Cerrar</a>
+                </div>
+                <div style="display:flex; gap:20px; align-items:flex-start;">
+                    <div class="mitad-tarjetas" id="mitad-tarjetas"></div>
+                    <div class="mitad-explicacion" id="mitad-explicacion"></div>
+                </div>
+            </div>
+        </div>
+
+        <a href="{% url 'inicio' %}" class="volver">← Volver a inicio</a>
+    </div>
+
+    <script>
+        (function () {
+            var zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            var coincidencia = document.cookie.match(/(?:^|; )django_timezone=([^;]*)/);
+            var zonaGuardada = coincidencia ? decodeURIComponent(coincidencia[1]) : null;
+
+            if (zonaHoraria && zonaHoraria !== zonaGuardada) {
+                document.cookie = 'django_timezone=' + encodeURIComponent(zonaHoraria) + ';path=/;max-age=31536000';
+                location.reload();
+                return;
+            }
+
+            function actualizarReloj() {
+                var el = document.getElementById('reloj');
+                if (!el) return;
+                var ahora = new Date();
+                var horas = String(ahora.getHours()).padStart(2, '0');
+                var minutos = String(ahora.getMinutes()).padStart(2, '0');
+                var segundos = String(ahora.getSeconds()).padStart(2, '0');
+                el.textContent = horas + ':' + minutos + ':' + segundos + ' (' + zonaHoraria + ')';
+            }
+            actualizarReloj();
+            setInterval(actualizarReloj, 1000);
+        })();
+    </script>
+
+    <script>
+        (function () {
+            var SECCIONES = [
+                { tema: 'empresas', nombre: 'Empresas', icono: '🏢', color: '#2980b9' },
+                { tema: 'usuarios', nombre: 'Usuarios', icono: '👤', color: '#27ae60' },
+                { tema: 'tickets', nombre: 'Tickets', icono: '🎫', color: '#e67e22' },
+                { tema: 'cuenta', nombre: 'Mi cuenta', icono: '🔑', color: '#9b59b6' },
+                { tema: 'roles', nombre: 'Roles y permisos', icono: '👥', color: '#7f8c8d' },
+                { tema: 'general', nombre: 'General', icono: '⚙️', color: '#16a085' }
+            ];
+
+            var TUTORIALES = [
+                {
+                    id: 'alta-empresa', tema: 'empresas', icono: '🏢',
+                    titulo: 'Dar de alta una empresa/área',
+                    resumen: 'Crear una empresa nueva para que sus usuarios puedan levantar tickets.',
+                    palabras: 'dar de alta crear una empresa area nueva nombre descripcion logo activa',
+                    pasos: [
+                        'Inicia sesión como <strong>Administrador</strong> (solo los administradores pueden crear empresas).',
+                        'En la pantalla de inicio, entra a <strong>Empresas</strong>, y da clic en <strong>"+ Nueva empresa"</strong>.',
+                        'Escribe el <strong>nombre</strong> (obligatorio y único — no puede repetirse) y, si quieres, una <strong>descripción</strong>.',
+                        'Opcionalmente sube un <strong>logo</strong> (se guarda directo en el servidor, no en la nube).',
+                        'Da clic en <strong>Guardar</strong>. La empresa queda <strong>activa</strong> de inmediato.'
+                    ],
+                    nota: 'Las empresas nuevas se vinculan automáticamente a todos los administradores existentes, para que siempre tengan acceso.'
+                },
+                {
+                    id: 'editar-empresa', tema: 'empresas', icono: '✏️',
+                    titulo: 'Editar una empresa',
+                    resumen: 'Cambiar nombre, descripción o logo de una empresa que ya existe.',
+                    palabras: 'editar empresa cambiar nombre descripcion logo quitar',
+                    pasos: [
+                        'Ve a <strong>Empresas</strong> y busca la empresa en la tabla (usa el buscador o los filtros si hay muchas).',
+                        'Da clic en <strong>Editar</strong> (solo aparece si la empresa está activa o inactiva, no si ya fue eliminada).',
+                        'Cambia el nombre y/o la descripción que quieras.',
+                        'Para reemplazar el logo, elige un archivo nuevo. Para quitarlo sin poner otro, marca la casilla "Clear" junto al logo actual.',
+                        'Da clic en <strong>Guardar cambios</strong>.'
+                    ],
+                    nota: 'Si cambias el nombre, se refleja de inmediato en todos los tickets de esa empresa — no hay que hacer nada más.'
+                },
+                {
+                    id: 'eliminar-empresa', tema: 'empresas', icono: '🚫',
+                    titulo: 'Desactivar o eliminar una empresa',
+                    resumen: 'Qué botón usar según lo que quieras hacer, y qué pasa con sus tickets.',
+                    palabras: 'desactivar eliminar empresa eliminado permanente activar borrar',
+                    pasos: [
+                        '<strong>Desactivar</strong> (empresa activa): la oculta de la vista de los clientes y ya no se pueden levantar tickets nuevos ahí, pero se puede <strong>Activar</strong> de nuevo cuando quieras. Nada se pierde.',
+                        '<strong>Eliminar</strong> (solo si está activa): la marca como eliminada, le pone la fecha en el nombre para el historial, y la desactiva. Solo queda la opción de eliminarla de forma permanente.',
+                        '<strong>Eliminar permanente</strong> (solo si ya está eliminada): borra la empresa de verdad, para siempre. Sus <strong>tickets nunca se borran</strong> — los que seguían abiertos se cierran automáticamente, y se guarda el nombre de la empresa en cada uno.'
+                    ],
+                    nota: 'Los botones cambian según el estado de la empresa para que nunca puedas hacer dos cosas contradictorias a la vez.'
+                },
+                {
+                    id: 'alta-usuario', tema: 'usuarios', icono: '👤',
+                    titulo: 'Dar de alta un usuario',
+                    resumen: 'Crear una cuenta nueva de forma individual.',
+                    palabras: 'dar de alta crear un usuario nuevo rol pin contrasena correo bienvenida',
+                    pasos: [
+                        'Entra a <strong>Usuarios → Crear usuario</strong> (visible para Administradores y Agentes Cliente).',
+                        'Llena <strong>usuario</strong>, <strong>correo</strong> y <strong>teléfono</strong> (los tres son obligatorios).',
+                        'Elige el <strong>rol</strong>: Cliente, Agente Cliente o Agente de Soporte. La opción "Administrador" solo la ven los administradores.',
+                        'Si no eres administrador, el usuario queda vinculado automáticamente a tu(s) empresa(s). Si eres administrador, eliges a qué empresa(s) darle acceso.',
+                        'Da clic en <strong>Crear usuario</strong>.'
+                    ],
+                    nota: 'Se genera solo un PIN de 4 dígitos como contraseña y se manda por correo al nuevo usuario — el PIN nunca se muestra en pantalla.'
+                },
+                {
+                    id: 'alta-masiva', tema: 'usuarios', icono: '📑',
+                    titulo: 'Dar de alta usuarios masivos (CSV)',
+                    resumen: 'Crear varios usuarios de golpe subiendo un archivo.',
+                    palabras: 'carga masiva usuarios csv plantilla varios de golpe importar',
+                    pasos: [
+                        'Entra a <strong>Usuarios → Carga masiva</strong>.',
+                        'Descarga la <strong>plantilla CSV</strong> desde ahí mismo (trae las columnas correctas listas para llenar).',
+                        'Llena una fila por usuario con: <code>username</code>, <code>email</code>, <code>telefono</code>, <code>rol</code>, <code>empresas</code>.',
+                        'Sube el archivo ya lleno.',
+                        'El sistema te muestra un resumen de quién se creó bien y quién no.'
+                    ],
+                    nota: 'Igual que al crear uno solo, cada usuario recibe su PIN de 4 dígitos por correo — nunca aparece en el CSV de resultado.'
+                },
+                {
+                    id: 'activar-usuario', tema: 'usuarios', icono: '🔒',
+                    titulo: 'Activar o desactivar un usuario',
+                    resumen: 'Bloquear el acceso de alguien sin borrar su historial.',
+                    palabras: 'activar desactivar usuario bloquear acceso reactivar',
+                    pasos: [
+                        'Ve a <strong>Usuarios</strong> y localiza a la persona en la tabla.',
+                        'Da clic en <strong>Desactivar</strong> — ya no podrá iniciar sesión, pero todo su historial de tickets se conserva igual.',
+                        'Para devolverle el acceso, da clic en <strong>Activar</strong> en cualquier momento.'
+                    ],
+                    nota: 'Esto es distinto a eliminar: desactivar es reversible, eliminar permanentemente no.'
+                },
+                {
+                    id: 'restablecer-password', tema: 'usuarios', icono: '🔑',
+                    titulo: 'Restablecer la contraseña de otro usuario',
+                    resumen: 'Cuando alguien olvidó su PIN y no puede entrar.',
+                    palabras: 'restablecer contrasena de otro usuario olvido pin nuevo',
+                    pasos: [
+                        'Ve a <strong>Usuarios</strong> y busca a la persona.',
+                        'Da clic en <strong>Restablecer contraseña</strong>.',
+                        'Se genera un PIN nuevo y se le manda por correo automáticamente — tú tampoco lo ves en pantalla.'
+                    ]
+                },
+                {
+                    id: 'cambiar-password', tema: 'cuenta', icono: '🔑',
+                    titulo: 'Cambiar mi propia contraseña',
+                    resumen: 'Cualquier usuario puede hacerlo desde su sesión.',
+                    palabras: 'cambiar mi propia contrasena pin password',
+                    pasos: [
+                        'Con la sesión iniciada, da clic en <strong>Cambiar contraseña</strong> (junto a "Cerrar sesión", arriba a la derecha).',
+                        'Escribe tu contraseña actual.',
+                        'Escribe el PIN nuevo (debe ser de 4 números) y confírmalo.',
+                        'Guarda — no cierra tu sesión actual, y te llega un correo avisando del cambio.'
+                    ]
+                },
+                {
+                    id: 'eliminar-usuario', tema: 'usuarios', icono: '🗑️',
+                    titulo: 'Eliminar un usuario permanentemente',
+                    resumen: 'Solo administradores. Borra la cuenta sin tocar sus tickets.',
+                    palabras: 'eliminar usuario permanente borrar cuenta para siempre',
+                    pasos: [
+                        'Ve a <strong>Usuarios</strong> (solo Administradores ven este botón).',
+                        'Da clic en <strong>Eliminar permanente</strong> en la fila del usuario, y confirma.',
+                        'La cuenta se borra de verdad. Sus tickets <strong>no se borran</strong>: los que seguían abiertos se cierran automáticamente, y se conserva su nombre de usuario en el historial.'
+                    ],
+                    nota: 'Las cuentas marcadas como "protegidas" no se pueden eliminar ni editar desde aquí, por seguridad.'
+                },
+                {
+                    id: 'crear-ticket', tema: 'tickets', icono: '🎫',
+                    titulo: 'Levantar un ticket (incidente o requerimiento)',
+                    resumen: 'Cómo reportar un problema o pedir algo nuevo.',
+                    palabras: 'levantar crear ticket nuevo incidente requerimiento reportar problema',
+                    pasos: [
+                        'Desde el inicio, entra al <strong>portal de tu empresa</strong> y elige si es un <strong>Incidente</strong> (algo que falló) o un <strong>Requerimiento</strong> (algo nuevo que necesitas).',
+                        'Escribe un <strong>título</strong> corto y la <strong>descripción</strong> completa del problema.',
+                        'Elige tu <strong>medio de contacto</strong> preferido (teléfono, correo o WhatsApp) y el dato correspondiente.',
+                        'Si quieres, adjunta hasta <strong>3 imágenes o un PDF</strong> (5MB cada uno) como evidencia.',
+                        'Envía el ticket — queda en estado <strong>Abierto</strong>, listo para que soporte lo atienda.'
+                    ]
+                },
+                {
+                    id: 'adjuntar', tema: 'tickets', icono: '📎',
+                    titulo: 'Adjuntar imágenes o PDF a un ticket',
+                    resumen: 'Al crear el ticket o después, en una actualización.',
+                    palabras: 'adjuntar imagenes pdf archivos evidencia ticket subir',
+                    pasos: [
+                        'Puedes adjuntar hasta <strong>3 archivos</strong> por envío, cada uno de hasta <strong>5MB</strong>.',
+                        'Se aceptan imágenes o archivos PDF.',
+                        'Se pueden adjuntar tanto al crear el ticket como en cualquier actualización posterior, mientras siga abierto.',
+                        'Cuando el ticket se cierra, las imágenes quedan incluidas dentro del PDF de cierre.'
+                    ]
+                },
+                {
+                    id: 'atender-ticket', tema: 'tickets', icono: '🛠️',
+                    titulo: 'Atender un ticket (para soporte)',
+                    resumen: 'Agregar actualizaciones y marcarlo como resuelto.',
+                    palabras: 'atender ticket soporte actualizacion comentario marcar resuelto en proceso',
+                    pasos: [
+                        'Entra a <strong>Atender tickets</strong> — ahí ves la bandeja con todos los tickets pendientes de tus empresas asignadas.',
+                        'Abre el ticket y agrega un <strong>comentario/actualización</strong> contándole al cliente el avance.',
+                        'Puedes cambiar el estado a <strong>En proceso</strong> mientras trabajas en él.',
+                        'Cuando ya esté resuelto, describe la <strong>evidencia de resolución</strong> y márcalo como resuelto.',
+                        'El ticket <strong>no se cierra de inmediato</strong>: pasa a "Pendiente de confirmación" y espera hasta 3 días la respuesta del cliente.'
+                    ]
+                },
+                {
+                    id: 'confirmar-cierre', tema: 'tickets', icono: '✅',
+                    titulo: 'Confirmar o rechazar el cierre de un ticket',
+                    resumen: 'Cuando soporte marca tu ticket como resuelto.',
+                    palabras: 'confirmar rechazar cierre ticket cliente pendiente confirmacion',
+                    pasos: [
+                        'Cuando soporte marca un ticket tuyo como resuelto, te llega una notificación y el ticket pasa a "Pendiente de confirmación".',
+                        'Entra al ticket: si de verdad quedó resuelto, da clic en <strong>Confirmar cierre</strong>.',
+                        'Si sigue sin resolverse, da clic en <strong>Rechazar</strong> y el ticket regresa a soporte.',
+                        'Si no respondes en <strong>3 días</strong>, el ticket se cierra solo de forma automática.',
+                        'Al cerrarse, se genera un <strong>PDF con todo el historial</strong> y se manda un correo de aviso.'
+                    ]
+                },
+                {
+                    id: 'reabrir-ticket', tema: 'tickets', icono: '🔁',
+                    titulo: 'Reabrir un ticket cerrado',
+                    resumen: 'Si el problema regresó o quedó pendiente algo.',
+                    palabras: 'reabrir ticket cerrado volver a abrir',
+                    pasos: [
+                        'Soporte puede abrir un ticket ya cerrado desde su historial y darle clic a <strong>Reabrir</strong>.',
+                        'Vuelve a quedar activo, listo para seguir agregando actualizaciones.'
+                    ],
+                    nota: 'Solo se puede reabrir si la cuenta de quien lo levantó todavía existe.'
+                },
+                {
+                    id: 'filtros', tema: 'general', icono: '🔍',
+                    titulo: 'Usar los filtros y exportar a CSV/Excel',
+                    resumen: 'Encontrar y descargar justo lo que necesitas de cualquier tabla.',
+                    palabras: 'filtros buscar exportar csv excel tabla columna',
+                    pasos: [
+                        'Cada tabla del sistema (tickets, usuarios, empresas) tiene una fila de <strong>filtros por columna</strong> — puedes seleccionar varios valores a la vez en cada uno.',
+                        'Además hay un <strong>buscador general</strong> que filtra por cualquier texto visible en la tabla.',
+                        'Los botones <strong>"Exportar CSV"</strong> / <strong>"Exportar Excel"</strong> descargan exactamente lo que esté filtrado/visible en ese momento.'
+                    ]
+                },
+                {
+                    id: 'roles', tema: 'roles', icono: '👥',
+                    titulo: 'Roles y permisos: qué puede hacer cada quién',
+                    resumen: 'Administrador, Agente de Soporte, Agente Cliente y Cliente.',
+                    palabras: 'roles permisos que puede hacer cada quien administrador agente cliente soporte',
+                    pasos: [
+                        '<strong>Administrador:</strong> ve y edita todo, sin restricciones, en todas las empresas. Puede crear otros administradores y eliminar usuarios de forma permanente.',
+                        '<strong>Agente de Soporte:</strong> ve y atiende todos los tickets de las empresas que tiene asignadas.',
+                        '<strong>Agente Cliente:</strong> levanta tickets, crea usuarios clientes de su empresa, los activa/desactiva y les restablece la contraseña, y ve (solo lectura) los tickets de su empresa.',
+                        '<strong>Cliente:</strong> levanta tickets y ve/comenta únicamente los suyos.'
+                    ]
+                },
+                {
+                    id: 'notificaciones', tema: 'general', icono: '🔔',
+                    titulo: 'Notificaciones (avisos de tickets nuevos o con respuesta)',
+                    resumen: 'El numerito rojo junto a "Atender tickets" o "Mis tickets".',
+                    palabras: 'notificaciones avisos tickets nuevos comentarios pendientes badge',
+                    pasos: [
+                        'Si eres soporte, el número junto a <strong>Atender tickets</strong> indica cuántos tickets tienen comentarios nuevos del cliente que todavía no has visto.',
+                        'Si eres cliente, el número junto a <strong>Mis tickets</strong> indica cuántos de tus tickets tienen una actualización nueva de soporte.',
+                        'El número se actualiza solo, sin tener que recargar la página.'
+                    ]
+                }
+            ];
+
+            var gridSecciones = document.getElementById('grid-secciones');
+            var panelSplit = document.getElementById('panel-split');
+            var mitadTarjetas = document.getElementById('mitad-tarjetas');
+            var mitadExplicacion = document.getElementById('mitad-explicacion');
+            var tituloSplit = document.getElementById('titulo-split');
+            var buscador = document.getElementById('buscador-ayuda');
+            var seccionActiva = null;
+
+            function renderSecciones() {
+                gridSecciones.innerHTML = '';
+                SECCIONES.forEach(function (sec) {
+                    var count = TUTORIALES.filter(function (t) { return t.tema === sec.tema; }).length;
+                    var div = document.createElement('div');
+                    div.className = 'tarjeta-seccion';
+                    div.dataset.tema = sec.tema;
+                    div.innerHTML =
+                        '<div class="icono-seccion" style="background-color:' + sec.color + '22; color:' + sec.color + ';">' + sec.icono + '</div>' +
+                        '<h3>' + sec.nombre + '</h3>' +
+                        '<p>' + count + ' tutorial' + (count === 1 ? '' : 'es') + '</p>';
+                    div.addEventListener('click', function () { toggleSeccion(sec.tema, sec.nombre); });
+                    gridSecciones.appendChild(div);
+                });
+            }
+
+            function marcarSeccionActiva(tema) {
+                Array.from(gridSecciones.children).forEach(function (card) {
+                    card.classList.toggle('activa', card.dataset.tema === tema);
+                });
+            }
+
+            function renderMitadTarjetas(lista) {
+                mitadTarjetas.innerHTML = '';
+                if (lista.length === 0) {
+                    mitadTarjetas.innerHTML = '<p class="sin-resultados-split">No se encontró ningún tutorial con esa búsqueda.</p>';
+                    mostrarExplicacion(null);
+                    return;
+                }
+                lista.forEach(function (t, i) {
+                    var div = document.createElement('div');
+                    div.className = 'tarjeta-tutorial-mini' + (i === 0 ? ' activa' : '');
+                    div.dataset.id = t.id;
+                    div.innerHTML =
+                        '<span class="icono-mini">' + t.icono + '</span>' +
+                        '<div><h4>' + t.titulo + '</h4><p>' + t.resumen + '</p></div>';
+                    div.addEventListener('click', function () {
+                        mostrarExplicacion(t);
+                        Array.from(mitadTarjetas.children).forEach(function (c) { c.classList.remove('activa'); });
+                        div.classList.add('activa');
+                    });
+                    mitadTarjetas.appendChild(div);
+                });
+                mostrarExplicacion(lista[0]);
+            }
+
+            function mostrarExplicacion(t) {
+                if (!t) {
+                    mitadExplicacion.innerHTML = '<p class="placeholder-explicacion">Selecciona un tutorial de la lista para ver los pasos.</p>';
+                    return;
+                }
+                var pasosHtml = t.pasos.map(function (p) { return '<li>' + p + '</li>'; }).join('');
+                var notaHtml = t.nota ? '<div class="nota">💡 ' + t.nota + '</div>' : '';
+                mitadExplicacion.innerHTML =
+                    '<div class="encabezado-explicacion"><span class="icono-explicacion">' + t.icono + '</span><h3>' + t.titulo + '</h3></div>' +
+                    '<ol>' + pasosHtml + '</ol>' + notaHtml;
+            }
+
+            function abrirSplit(nombreTitulo, lista) {
+                tituloSplit.textContent = nombreTitulo;
+                renderMitadTarjetas(lista);
+                panelSplit.style.display = 'flex';
+                gridSecciones.style.display = 'none';
+            }
+
+            function cerrarSplit() {
+                seccionActiva = null;
+                buscador.value = '';
+                panelSplit.style.display = 'none';
+                gridSecciones.style.display = 'grid';
+                marcarSeccionActiva(null);
+            }
+
+            function toggleSeccion(tema, nombre) {
+                if (seccionActiva === tema) {
+                    cerrarSplit();
+                    return;
+                }
+                seccionActiva = tema;
+                marcarSeccionActiva(tema);
+                var lista = TUTORIALES.filter(function (t) { return t.tema === tema; });
+                abrirSplit(nombre, lista);
+            }
+
+            buscador.addEventListener('input', function () {
+                var texto = buscador.value.trim().toLowerCase();
+                if (!texto) {
+                    seccionActiva = null;
+                    panelSplit.style.display = 'none';
+                    gridSecciones.style.display = 'grid';
+                    marcarSeccionActiva(null);
+                    return;
+                }
+                seccionActiva = null;
+                marcarSeccionActiva(null);
+                var coincidencias = TUTORIALES.filter(function (t) {
+                    var contenido = (t.titulo + ' ' + t.resumen + ' ' + t.palabras + ' ' + t.pasos.join(' ')).toLowerCase();
+                    return contenido.indexOf(texto) !== -1;
+                });
+                abrirSplit('Resultados de búsqueda: "' + buscador.value.trim() + '" (' + coincidencias.length + ')', coincidencias);
+            });
+
+            document.getElementById('cerrar-split').addEventListener('click', cerrarSplit);
+
+            renderSecciones();
+        })();
+    </script>
+    {% include 'tickets/_prevenir_doble_envio.html' %}
+</body>
+
+</html>
