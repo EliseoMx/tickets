@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bandeja de tickets - {{ nombre_sistema }}</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f5f7; margin: 0; padding: 0; }
@@ -49,6 +50,13 @@
         .filtro-multi-panel input[type="checkbox"] { margin: 0; }
         .fila-busqueda td { background-color: #fafbfc; padding: 6px 8px 14px 8px; border-bottom: 1px solid #e0e0e0; }
         .fila-busqueda input[type="text"] { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+
+        @media (max-width: 768px) {
+            header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .contenedor { margin: 15px 8px; padding: 16px; }
+            .exportar-botones { flex-wrap: wrap; }
+            table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: nowrap; }
+        }
     </style>
 </head>
 <body>

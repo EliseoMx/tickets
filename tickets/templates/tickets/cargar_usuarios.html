@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Carga masiva de usuarios - {{ nombre_sistema }}</title>
     <style>
         body {
@@ -167,6 +168,19 @@
         .mensaje.error {
             background-color: #f8d7da;
             color: #721c24;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .contenedor {
+                margin: 20px 12px;
+                padding: 20px;
+            }
         }
     </style>
 </head>

@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ empresa.nombre }} - {{ nombre_sistema }}</title>
     <style>
         body {
@@ -187,6 +188,19 @@
         .mensaje.error {
             background-color: #f8d7da;
             color: #721c24;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .contenedor {
+                margin: 15px 0;
+                padding: 0 10px;
+            }
         }
     </style>
 </head>

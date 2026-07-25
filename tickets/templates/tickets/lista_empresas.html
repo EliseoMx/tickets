@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Empresas - {{ nombre_sistema }}</title>
     <style>
         body {
@@ -411,6 +412,43 @@
             border: none;
             cursor: pointer;
             font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .contenedor {
+                margin: 15px 8px;
+                padding: 16px;
+            }
+
+            .exportar-botones {
+                flex-wrap: wrap;
+            }
+
+            table {
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                min-width: 0;
+            }
+
+            table thead,
+            table tbody,
+            table tr {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+            }
+
+            table thead,
+            table tbody {
+                min-width: 700px;
+            }
         }
     </style>
 </head>
