@@ -10,3 +10,6 @@ staticfiles/
 graphify-out/
 .DS_Store
 Thumbs.db
+# Configuracion local de Claude Code (rutas de cada maquina; no va en el repo)
+.claude/
+CLAUDE.md
