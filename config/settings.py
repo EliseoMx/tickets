@@ -192,6 +192,23 @@ EMAIL_BCC_CIERRE = os.environ.get('EMAIL_BCC_CIERRE')
 # Liga pública donde vive el sistema (usada en correos, ej. bienvenida)
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
+# HTTPS (ver README, sección "Activar HTTPS"). Apagado por defecto: en desarrollo
+# local no cambia nada. Se enciende con USE_HTTPS=True en el .env del servidor,
+# detrás de IIS, que termina el HTTPS y avisa con el encabezado X-Forwarded-Proto.
+USE_HTTPS = os.environ.get('USE_HTTPS', 'False') == 'True'
+if USE_HTTPS:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS: 0 = apagado. Súbelo (ej. 31536000 = 1 año) solo cuando HTTPS ya
+    # funcione bien, porque los navegadores recuerdan la regla ese tiempo.
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '0'))
+    # Orígenes que Django acepta en formularios POST. Por defecto, el de SITE_URL.
+    CSRF_TRUSTED_ORIGINS = [
+        o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', SITE_URL).split(',')
+        if o.strip().startswith('https://')
+    ]
+
 # Cuenta de administrador protegida: se crea sola después de cada `migrate` si no existe
 # (ver tickets/apps.py). Nunca se hardcodea aquí; vive únicamente en el .env de cada instalación.
 ADMIN_PROTEGIDO_USERNAME = os.environ.get('ADMIN_PROTEGIDO_USERNAME')
