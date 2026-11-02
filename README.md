@@ -226,15 +226,18 @@ exactamente igual que antes).
 `runserver` es solo para desarrollo. En Windows, el equivalente de producción a Gunicorn (que no funciona
 en Windows) es **Waitress**, ya incluido en `requirements.txt`. Se levanta así:
 ```
-waitress-serve --host=127.0.0.1 --port=8000 config.wsgi:application
+waitress-serve --host=127.0.0.1 --port=8000 --trusted-proxy=127.0.0.1 --trusted-proxy-headers=x-forwarded-proto config.wsgi:application
 ```
+(`--trusted-proxy` hace que Waitress acepte el encabezado `X-Forwarded-Proto` que le manda IIS, necesario para
+HTTPS; sin él lo descarta y Django nunca se entera de que la conexión es segura.)
+
 Esto deja el sistema escuchando solo en `127.0.0.1:8000` (no expuesto directo a internet — ese es trabajo
 de IIS, ver el punto 4).
 
 Para que seguir corriendo después de reiniciar el servidor (sin depender de una terminal abierta), regístralo
 como servicio de Windows con **[NSSM](https://nssm.cc/)**:
 ```
-nssm install SistemaTickets "C:\ruta\al\proyecto\venv\Scripts\waitress-serve.exe" --host=127.0.0.1 --port=8000 config.wsgi:application
+nssm install SistemaTickets "C:\ruta\al\proyecto\venv\Scripts\waitress-serve.exe" --host=127.0.0.1 --port=8000 --trusted-proxy=127.0.0.1 --trusted-proxy-headers=x-forwarded-proto config.wsgi:application
 nssm start SistemaTickets
 ```
 
@@ -269,7 +272,42 @@ SECRET_KEY=<genera una nueva, ver sección de Configuración de arriba>
 4. En el firewall de Windows, **bloquea el puerto 8000 hacia afuera** — solo IIS (puertos 80/443) debe
    quedar expuesto a internet; Waitress solo debe ser alcanzable desde el propio servidor.
 5. Para HTTPS, instala un certificado en IIS — gratis con Let's Encrypt usando
-   **[win-acme](https://www.win-acme.com/)**.
+   **[win-acme](https://www.win-acme.com/)**. Los pasos completos están en la siguiente sección.
+
+### Activar HTTPS
+
+El sistema ya viene preparado: solo se enciende con variables del `.env` del servidor y no cambia nada en
+desarrollo local (`USE_HTTPS=False` por defecto). Orden recomendado:
+
+1. **Nombre de dominio.** Los certificados se emiten para un nombre, no para una IP. Crea un registro DNS
+   (ej. `tickets.tuempresa.com`) que apunte a la IP del servidor.
+2. **Certificado.** Si el sistema es accesible desde internet, usa Let's Encrypt con win-acme. Si es solo
+   interno, usa uno de la CA de la empresa o uno autofirmado (los navegadores mostrarán advertencia salvo que
+   se instale en cada equipo).
+3. **Enlace HTTPS en IIS.** En IIS Manager, en el sitio: Enlaces > Agregar > tipo `https`, puerto `443`,
+   nombre de host y el certificado.
+4. **Permitir la variable de servidor** (una sola vez por servidor): IIS Manager > nombre del servidor >
+   URL Rewrite > "View Server Variables..." > Add > `HTTP_X_FORWARDED_PROTO`. Sin esto, IIS responde 500.50.
+5. **`web.config`.** Usa el de [`deploy/iis/web.config`](deploy/iis/web.config): ya redirige http a https y
+   manda `X-Forwarded-Proto: https` hacia Waitress. Waitress debe arrancar con `--trusted-proxy` (ver paso 1).
+6. **`.env` del servidor:**
+   ```
+   USE_HTTPS=True
+   SITE_URL=https://tickets.tuempresa.com
+   ALLOWED_HOSTS=tickets.tuempresa.com
+   ```
+   Con `USE_HTTPS=True` Django marca las cookies de sesión y CSRF como seguras y acepta el origen de
+   `SITE_URL` en los formularios (`CSRF_TRUSTED_ORIGINS`, opcional si necesitas más de uno). Los links de los
+   correos saldrán con `https://`.
+7. **Firewall.** Abre los puertos 80 (para la redirección) y 443; el puerto interno de Waitress sigue
+   bloqueado hacia afuera.
+8. **Prueba.** Entra por `http://` (debe redirigir a `https://`), inicia sesión y envía un correo de prueba.
+9. **HSTS (opcional, al final).** Cuando todo funcione, sube `SECURE_HSTS_SECONDS` (ej. `31536000`) para que
+   los navegadores obliguen a usar siempre HTTPS. No lo actives antes: el navegador recuerda la regla por
+   todo ese tiempo y, si el certificado falla, el sitio quedaría inaccesible.
+
+Si al iniciar sesión aparece "CSRF verification failed", casi siempre es porque falta `USE_HTTPS=True`, el
+`SITE_URL` no coincide con la dirección real, o Waitress no se levantó con `--trusted-proxy`.
 
 #### Usar otro puerto interno (si el 8000 ya está ocupado)
 
@@ -280,11 +318,11 @@ mismo servidor. Si en el servidor destino ese puerto ya lo usa otro sistema inte
 
 1. **El comando de Waitress** (paso 1, "Servidor WSGI"):
    ```powershell
-   waitress-serve --host=127.0.0.1 --port=8100 config.wsgi:application
+   waitress-serve --host=127.0.0.1 --port=8100 --trusted-proxy=127.0.0.1 --trusted-proxy-headers=x-forwarded-proto config.wsgi:application
    ```
 2. **El servicio de NSSM**:
    ```powershell
-   nssm install SistemaTickets "C:\ruta\al\proyecto\venv\Scripts\waitress-serve.exe" --host=127.0.0.1 --port=8100 config.wsgi:application
+   nssm install SistemaTickets "C:\ruta\al\proyecto\venv\Scripts\waitress-serve.exe" --host=127.0.0.1 --port=8100 --trusted-proxy=127.0.0.1 --trusted-proxy-headers=x-forwarded-proto config.wsgi:application
    ```
 3. **El `web.config` de IIS** ([`deploy/iis/web.config`](deploy/iis/web.config)), cambia:
    ```xml
