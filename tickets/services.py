@@ -11,11 +11,18 @@ from django.utils import timezone
 from xhtml2pdf import pisa
 
 
+def _liga_login():
+    # SITE_URL es solo el origen (ej. http://aicap.mx). Si el sistema vive en una
+    # subruta (URL_PREFIX, ej. /tickets) hay que agregarla a mano: aqui no hay request.
+    prefijo = getattr(settings, 'FORCE_SCRIPT_NAME', None) or ''
+    return f'{settings.SITE_URL.rstrip("/")}{prefijo}/login/'
+
+
 def enviar_correo_bienvenida(usuario, pin):
     if not usuario.email:
         return False
 
-    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    liga = _liga_login()
     asunto = f'Bienvenido al {settings.NOMBRE_SISTEMA}'
     cuerpo = (
         f'Hola {usuario.username},\n\n'
@@ -35,7 +42,7 @@ def enviar_correo_restablecimiento(usuario, pin):
     if not usuario.email:
         return False
 
-    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    liga = _liga_login()
     asunto = f'Tu contraseña fue restablecida - {settings.NOMBRE_SISTEMA}'
     cuerpo = (
         f'Hola {usuario.username},\n\n'
@@ -55,7 +62,7 @@ def enviar_correo_cambio_password(usuario, pin):
     if not usuario.email:
         return False
 
-    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    liga = _liga_login()
     asunto = f'Cambiaste tu contraseña - {settings.NOMBRE_SISTEMA}'
     cuerpo = (
         f'Hola {usuario.username},\n\n'
@@ -76,7 +83,7 @@ def enviar_correo_actualizacion_soporte(ticket, actualizacion):
     if not ticket.cliente or not ticket.cliente.email:
         return False
 
-    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    liga = _liga_login()
     asunto = f'Actualización en tu ticket #{ticket.id} — {ticket.titulo}'
     cuerpo = (
         f'Hola {ticket.cliente.username},\n\n'
@@ -104,7 +111,7 @@ def enviar_correo_actualizacion_cliente(ticket, actualizacion):
     if not destinatarios:
         return False
 
-    liga = f'{settings.SITE_URL.rstrip("/")}/login/'
+    liga = _liga_login()
     asunto = f'{ticket.nombre_cliente} respondió el ticket #{ticket.id} — {ticket.titulo}'
     cuerpo = (
         f'Hola,\n\n'

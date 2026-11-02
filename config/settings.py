@@ -192,6 +192,18 @@ EMAIL_BCC_CIERRE = os.environ.get('EMAIL_BCC_CIERRE')
 # Liga pública donde vive el sistema (usada en correos, ej. bienvenida)
 SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
+# Subruta (ver README, sección "Publicar en una subruta"). Si el sistema vive en
+# https://midominio.com/tickets, pon URL_PREFIX=tickets en el .env. IIS quita ese
+# prefijo al reenviar a Waitress; aquí se vuelve a agregar al generar los links.
+# Vacío (por defecto) = el sistema vive en la raíz, igual que en desarrollo local.
+URL_PREFIX = os.environ.get('URL_PREFIX', '').strip().strip('/')
+if URL_PREFIX:
+    FORCE_SCRIPT_NAME = '/' + URL_PREFIX
+    # Que las cookies de sesión y CSRF solo viajen hacia esta subruta y no se mezclen
+    # con otras aplicaciones del mismo dominio (la página principal, por ejemplo).
+    SESSION_COOKIE_PATH = '/' + URL_PREFIX
+    CSRF_COOKIE_PATH = '/' + URL_PREFIX
+
 # HTTPS (ver README, sección "Activar HTTPS"). Apagado por defecto: en desarrollo
 # local no cambia nada. Se enciende con USE_HTTPS=True en el .env del servidor,
 # detrás de IIS, que termina el HTTPS y avisa con el encabezado X-Forwarded-Proto.

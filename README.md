@@ -274,6 +274,51 @@ SECRET_KEY=<genera una nueva, ver sección de Configuración de arriba>
 5. Para HTTPS, instala un certificado en IIS — gratis con Let's Encrypt usando
    **[win-acme](https://www.win-acme.com/)**. Los pasos completos están en la siguiente sección.
 
+### Publicar en una subruta (ej. `https://midominio.com/tickets`)
+
+Útil cuando el dominio ya tiene otro sitio en la raíz (la página principal) y el sistema debe colgar de una
+ruta. El sistema ya lo soporta con una sola variable; en desarrollo local no hay que tocar nada.
+
+```
+Navegador ──► IIS (sitio midominio.com, puerto 80/443)
+                └─ aplicación /tickets ──► Waitress (127.0.0.1:8100) ──► Django
+```
+
+IIS **quita** `/tickets` al reenviar y Django lo **vuelve a poner** al generar links, cookies y correos.
+
+1. **`.env` del servidor:**
+   ```
+   URL_PREFIX=tickets
+   SITE_URL=http://midominio.com        # solo el origen, SIN /tickets
+   ALLOWED_HOSTS=midominio.com
+   ```
+2. **Waitress** en un puerto interno libre (ej. 8100), como en la sección anterior.
+3. **ARR** debe conservar el encabezado `Host` original; si no, Django rechaza los formularios con
+   "CSRF verification failed" (Django compara el origen del navegador con el `Host` que recibe):
+   ```powershell
+   & "$env:windir\System32\inetsrv\appcmd.exe" set config -section:system.webServer/proxy /preserveHostHeader:"True" /commit:apphost
+   ```
+4. **Carpeta de la aplicación** con el [`web.config`](deploy/iis/web.config) de este repo (ajusta el puerto
+   si no usas 8000) y, dentro del sitio existente de IIS, una *aplicación* y el directorio virtual de estáticos:
+   ```powershell
+   Import-Module WebAdministration
+   $sitio = "NOMBRE-DEL-SITIO-EN-IIS"
+   New-Item -ItemType Directory -Force C:\SitiosWeb\SistemaTickets-iis | Out-Null
+   Copy-Item deploy\iis\web.config C:\SitiosWeb\SistemaTickets-iis\web.config
+   New-WebAppPool -Name "SistemaTickets" | Out-Null
+   Set-ItemProperty IIS:\AppPools\SistemaTickets -Name managedRuntimeVersion -Value ""
+   New-WebApplication -Site $sitio -Name "tickets" -PhysicalPath C:\SitiosWeb\SistemaTickets-iis -ApplicationPool "SistemaTickets"
+   New-WebVirtualDirectory -Site $sitio -Application "tickets" -Name "static" -PhysicalPath C:\SitiosWeb\SistemaTickets\staticfiles
+   icacls C:\SitiosWeb\SistemaTickets-iis /grant "IIS_IUSRS:(OI)(CI)RX"
+   icacls C:\SitiosWeb\SistemaTickets\staticfiles /grant "IIS_IUSRS:(OI)(CI)RX" "IUSR:(OI)(CI)RX"
+   ```
+5. Prueba `http://midominio.com/tickets/login/`. Si el sitio ya tiene HTTPS, `https://midominio.com/tickets/`
+   funciona con el mismo certificado; entonces sigue la sección "Activar HTTPS" (con `web.https.config`).
+
+El `web.config` del *sitio principal* no debe tener reglas que atrapen todas las URL: la aplicación hereda su
+configuración. Las cookies de sesión y CSRF quedan limitadas a `/tickets`, así que no se mezclan con la página
+principal.
+
 ### Activar HTTPS
 
 El sistema ya viene preparado: solo se enciende con variables del `.env` del servidor y no cambia nada en
@@ -288,8 +333,9 @@ desarrollo local (`USE_HTTPS=False` por defecto). Orden recomendado:
    nombre de host y el certificado.
 4. **Permitir la variable de servidor** (una sola vez por servidor): IIS Manager > nombre del servidor >
    URL Rewrite > "View Server Variables..." > Add > `HTTP_X_FORWARDED_PROTO`. Sin esto, IIS responde 500.50.
-5. **`web.config`.** Usa el de [`deploy/iis/web.config`](deploy/iis/web.config): ya redirige http a https y
-   manda `X-Forwarded-Proto: https` hacia Waitress. Waitress debe arrancar con `--trusted-proxy` (ver paso 1).
+5. **`web.config`.** Usa [`deploy/iis/web.https.config`](deploy/iis/web.https.config) (renómbralo a
+   `web.config` en la carpeta del sitio): redirige http a https y manda `X-Forwarded-Proto: https` hacia
+   Waitress. Waitress debe arrancar con `--trusted-proxy` (ver paso 1).
 6. **`.env` del servidor:**
    ```
    USE_HTTPS=True
